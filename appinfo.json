@@ -16,13 +16,19 @@
           "name": "EXAMPLE_IMAGE",
           "file": "images/example-image.png"
         }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOM_42",
+            "file": "fonts/klingon font.ttf"
+        }
     ]
   },
-  "shortName": "Enigma+",
-  "longName": "Enigma+ (Digital, Color) Watch Face",
-  "versionCode": 2,
+  "shortName": "Enigma Klingon",
+  "longName": "Enigma Klingon (Digital, Color) Watch Face",
+  "versionCode": 1,
   "companyName": "neon",
-  "versionLabel": "2.4",
+  "versionLabel": "1.0",
   "uuid": "e91a944a-fdbb-4953-8931-f96c7772ffa7",
   "watchapp": {
     "watchface": true

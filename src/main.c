@@ -1,12 +1,21 @@
 /**
- * Enigma watch face variant.
- * Modified by @neon from @chadheim's old black & white example:
- *   https://github.com/chadheim/pebble-watchface-slider
+ * Enigma watch face variant with alien text.
+ * (Mod of Enigma Plus)
+ *
+ * Credits:
+ * > Klingon font (http://www.dafont.com/klingon-font.font) by kaiserzharkhan
+ * Notes:
+ * > Digit size: 20x29 px
+ *   > 36x48 max
+ *
+ * Differences from Enigma-Plus
+ * > Alien (Klingon) enigma text, with date & time decoded/revealed a while later.
+ * > Removed year display, so as to show more alien text.
  *
  * Changes:
  * > Coloured time bar:
  *   > red for AM, blue for PM.
- * > Added rows for: year, DDMM, 'day of week'.
+ * > Added rows for: DDMM, 'day of week'.
  * > 'day of week' mini-bar (top-left) doubles as 'bluetooth status' indicator.
  *   > Coloured: connected; dark: disconnected.
  * > Added battery-level indicator: it's the 3rd column.
@@ -17,18 +26,33 @@
 #define TXT_LAYER_DAY_OF_WEEK 4
 #define BATTERY_LVL_COL 2
 
+//Interval (in ms) to decode/reveal date & time
+#define INTERVAL_REVEAL_INITIAL 1000
+#define INTERVAL_REVEAL_NEXT 250
+
 Window *my_window;
 Layer *time_box_layer, *battery_level_layer;
-TextLayer *text_layer[5];
+TextLayer *text_layer[5], *m_ptxtDate, *m_ptxtTime;
 PropertyAnimation *animations[5] = {0};
 GRect to_rect[6];
 int center;
 
-char digits[4][32], digitsBkup[4][32];
+char digits[4][32], digitsBkup[4][32], digitsDate[8] = {32}, digitsTime[8] = {32};
 int offsets[4][10];
 int order[4][10];
 bool m_bIsAm = false;
 static char s_dayOfWeek_buffer[4];
+
+static TextLayer *s_font_layer;
+static GFont s_custom_font;
+static AppTimer *m_sptimer1;
+static int m_nRevealStep = 0;
+int digitTime1, digitTime2, digitTime3, digitTime4,
+    digitDate1, digitDate2, digitDate3, digitDate4;
+
+//forward declaration
+void animation_stopped(struct Animation *animation);
+
 
 //
 //Bluetooth stuff
@@ -148,7 +172,7 @@ void change_digit(int col, int ref, int num, int off)
  * Change the digit in given column, and animate the column by rolling
  * the newly selected digit into position (3rd row).
  **/
-void set_digit(int col, int num) {
+void set_digit(int col, int num, bool toCallback) {
     Layer *layer = text_layer_get_layer(text_layer[col]);
 
     to_rect[col] = layer_get_frame(layer);
@@ -161,6 +185,14 @@ void set_digit(int col, int num) {
     }
 
     animations[col] = property_animation_create_layer_frame(layer, NULL, &to_rect[col]);
+    if (toCallback)
+    {
+        // You may set handlers to listen for the start and stop events
+        animation_set_handlers((Animation*) animations[col], (AnimationHandlers) {
+            .started = NULL,
+            .stopped = (AnimationStoppedHandler) animation_stopped,
+        }, NULL);
+    }
     animation_set_duration((Animation*) animations[col], 1000);
     animation_schedule((Animation*) animations[col]);
 }
@@ -170,13 +202,82 @@ void set_digit(int col, int num) {
  * @param col column to change.
  * @param numTime one of the hhmm (time) digits.
  * @param numTop one of the ddmm (date) digits.
- * @param numBtm one of the year digits.
  **/
-void change_digits(int col, int numTime, int numTop, int numBtm)
+void change_digits(int col, int numTime, int numTop, bool toCallback)
 {
     change_digit(col, numTime, numTop, -2);
-    change_digit(col, numTime, numBtm, 2);
-    set_digit(col, numTime);
+    set_digit(col, numTime, toCallback);
+}
+
+/**
+ * Change the digits in given column.
+ * @param col column to change.
+ * @param numTime one of the hhmm (time) digits.
+ **/
+void hide_digits(int col, int numTime)
+{
+    change_digit(col, numTime, ' ', -2);
+    change_digit(col, numTime, ' ', 0);
+    text_layer_set_text(text_layer[col], &digits[col][0]);
+}
+
+void revealDateTime(void *a_pData)
+{
+    switch (m_nRevealStep)
+    {
+        case 0:
+            change_digit(0, digitTime1, ' ', -2);
+            text_layer_set_text(text_layer[0], &digits[0][0]);
+            digitsDate[0] = '0' + digitDate1;
+            ++m_nRevealStep;
+            m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            break;
+        case 1:
+            change_digit(1, digitTime2, ' ', -2);
+            text_layer_set_text(text_layer[1], &digits[1][0]);
+            change_digit(0, digitTime1, ' ', 0);
+            text_layer_set_text(text_layer[0], &digits[0][0]);
+            digitsDate[2] = '0' + digitDate2;
+            digitsTime[0] = '0' + digitTime1;
+            ++m_nRevealStep;
+            m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            break;
+        case 2:
+            change_digit(2, digitTime3, ' ', -2);
+            text_layer_set_text(text_layer[2], &digits[2][0]);
+            change_digit(1, digitTime2, ' ', 0);
+            text_layer_set_text(text_layer[1], &digits[1][0]);
+            digitsDate[4] = '0' + digitDate3;
+            digitsTime[2] = '0' + digitTime2;
+            ++m_nRevealStep;
+            m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            break;
+        case 3:
+            change_digit(3, digitTime4, ' ', -2);
+            text_layer_set_text(text_layer[3], &digits[3][0]);
+            change_digit(2, digitTime3, ' ', 0);
+            text_layer_set_text(text_layer[2], &digits[2][0]);
+            digitsDate[6] = '0' + digitDate4;
+            digitsTime[4] = '0' + digitTime3;
+            ++m_nRevealStep;
+            m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            break;
+        case 4:
+        default:
+            change_digit(3, digitTime4, ' ', 0);
+            text_layer_set_text(text_layer[3], &digits[3][0]);
+            digitsTime[6] = '0' + digitTime4;
+            ++m_nRevealStep;
+            break;
+    }
+    text_layer_set_text(m_ptxtDate, digitsDate);
+    text_layer_set_text(m_ptxtTime, digitsTime);
+}
+
+void animation_stopped(struct Animation *animation)
+{
+    m_nRevealStep = 0;
+    m_sptimer1 = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, NULL);
 }
 
 /**
@@ -227,6 +328,12 @@ void changeDayOfWeek(struct tm* tick_time)
 }
 
 void display_time(struct tm* tick_time) {
+    //erase decoded numerals:
+    digitsDate[0] = 32; digitsDate[2] = 32; digitsDate[4] = 32; digitsDate[6] = 32;
+    digitsTime[0] = 32; digitsTime[2] = 32; digitsTime[4] = 32; digitsTime[6] = 32;
+    text_layer_set_text(m_ptxtDate, digitsDate);
+    text_layer_set_text(m_ptxtTime, digitsTime);
+
     int h = tick_time->tm_hour;
     int m = tick_time->tm_min;
 
@@ -249,13 +356,20 @@ void display_time(struct tm* tick_time) {
      *   3rd row: hhmm (time)
      *   4th row: year
      **/
-    int year = tick_time->tm_year + 1900;
     int mthsSinceJan = tick_time->tm_mon + 1; //base 0
     int dayOfMth = tick_time->tm_mday; //base 1
-    change_digits(0, h/10, dayOfMth / 10, year / 1000);
-    change_digits(1, h%10, dayOfMth % 10, (year % 1000) / 100);
-    change_digits(2, m/10, mthsSinceJan / 10, (year % 100) / 10);
-    change_digits(3, m%10, mthsSinceJan % 10, year % 10);
+    digitTime1 = h/10;
+    digitTime2 = h%10;
+    digitTime3 = m/10;
+    digitTime4 = m%10;
+    digitDate1 = dayOfMth / 10;
+    digitDate2 = dayOfMth % 10;
+    digitDate3 = mthsSinceJan / 10;
+    digitDate4 = mthsSinceJan % 10;
+    change_digits(0, digitTime1, digitDate1, false);
+    change_digits(1, digitTime2, digitDate2, false);
+    change_digits(2, digitTime3, digitDate3, false);
+    change_digits(3, digitTime4, digitDate4, true);
 
     //show day of week in row above ddmm (i.e. 1st row):
     changeDayOfWeek(tick_time);
@@ -324,6 +438,13 @@ void handle_init(void)
     window_set_background_color(my_window, GColorBlack);
 
     s_dayOfWeek_buffer[0] = 0;
+    for (int j = 0; j < 8; ++j)
+    {
+        digitsDate[j] = 32;
+        digitsTime[j] = 32;
+    }
+    digitsDate[7] = 0;
+    digitsTime[7] = 0;
 
     Layer *root_layer = window_get_root_layer(my_window);
     GRect frame = layer_get_frame(root_layer);
@@ -342,6 +463,8 @@ void handle_init(void)
 
     srand(time(NULL));
 
+    s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_42));
+
     for (int i = 0; i < 4; ++i)
     {
         fill_order(i);
@@ -358,7 +481,8 @@ void handle_init(void)
         //  m_bIsAm? GColorRed: GColorBlue);
         text_layer_set_font(text_layer[i],
             //fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-            fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS)); //Can't use, as numbers only
+            //fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS)); //Can't use, as numbers only
+            s_custom_font);
         text_layer_set_text(text_layer[i], &digits[i][0]);
         text_layer_set_text_alignment(text_layer[i], GTextAlignmentCenter);
         layer_add_child(root_layer, text_layer_get_layer(text_layer[i]));
@@ -378,6 +502,22 @@ void handle_init(void)
     text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextAlignmentLeft);
     //text_layer_set_overflow_mode(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextOverflowModeWordWrap);
     layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK]));
+
+    //Add decoded (roman numeral) date (ddmm) & time layers above enigma (enigma alien text) layers
+    m_ptxtDate = text_layer_create(GRect(0, frame.size.h / 8 - 7, frame.size.w, frame.size.h / 4));
+    m_ptxtTime = text_layer_create(GRect(0, frame.size.h * 3 / 8 - 7, frame.size.w, frame.size.h / 4));
+    text_layer_set_text_color(m_ptxtDate, GColorWhite);
+    text_layer_set_background_color(m_ptxtDate, GColorClear);
+    text_layer_set_font(m_ptxtDate, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+    text_layer_set_text(m_ptxtDate, "");
+    text_layer_set_text_alignment(m_ptxtDate, GTextAlignmentLeft);
+    layer_add_child(root_layer, text_layer_get_layer(m_ptxtDate));
+    text_layer_set_text_color(m_ptxtTime, GColorWhite);
+    text_layer_set_background_color(m_ptxtTime, GColorClear);
+    text_layer_set_font(m_ptxtTime, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+    text_layer_set_text(m_ptxtTime, "");
+    text_layer_set_text_alignment(m_ptxtTime, GTextAlignmentLeft);
+    layer_add_child(root_layer, text_layer_get_layer(m_ptxtTime));
 
     time_t now = time(NULL);
     struct tm *tick_time = localtime(&now);
@@ -403,8 +543,12 @@ void handle_deinit(void) {
         if (animations[i])
             property_animation_destroy(animations[i]);
     }
+    text_layer_destroy(m_ptxtDate);
+    text_layer_destroy(m_ptxtTime);
     layer_destroy(time_box_layer);
     layer_destroy(battery_level_layer);
+    fonts_unload_custom_font(s_custom_font);
+    app_timer_cancel(m_sptimer1);
     window_destroy(my_window);
 }
 
