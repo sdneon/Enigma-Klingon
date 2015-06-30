@@ -32,7 +32,7 @@ Watch face: AM, bluetooth disconnected, battery charging
 Watch face: PM, bluetooth connected, battery charging
 
 ## Build
-You will need to download the [Klingon font](http://www.dafont.com/klingon-font.font) and place it in _/resources/font_ folder.
+You will need to download the [Klingon font](http://www.dafont.com/klingon-font.font) and place it in _/resources/fonts_ folder.
  * You could use alternative fonts for other alien texts or Wingdings, etc. Just change the _file_ paths in appinfo.json acoordingly.
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
