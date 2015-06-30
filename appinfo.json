@@ -22,6 +22,12 @@
             "name": "FONT_CUSTOM_42",
             "file": "fonts/klingon font.ttf"
         }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOM_30",
+            "file": "fonts/klingon font.ttf"
+        }
     ]
   },
   "shortName": "Enigma Klingon",

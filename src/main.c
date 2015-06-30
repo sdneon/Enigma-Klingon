@@ -28,11 +28,11 @@
 
 //Interval (in ms) to decode/reveal date & time
 #define INTERVAL_REVEAL_INITIAL 1000
-#define INTERVAL_REVEAL_NEXT 250
+#define INTERVAL_REVEAL_NEXT 15
 
 Window *my_window;
 Layer *time_box_layer, *battery_level_layer;
-TextLayer *text_layer[5], *m_ptxtDate, *m_ptxtTime;
+TextLayer *text_layer[6], *m_ptxtDate, *m_ptxtTime;
 PropertyAnimation *animations[5] = {0};
 GRect to_rect[6];
 int center;
@@ -43,9 +43,8 @@ int order[4][10];
 bool m_bIsAm = false;
 static char s_dayOfWeek_buffer[4];
 
-static TextLayer *s_font_layer;
-static GFont s_custom_font;
-static AppTimer *m_sptimer1;
+static GFont s_custom_font30, s_custom_font42;
+static AppTimer *m_sptimer1, m_sptimer2;
 static int m_nRevealStep = 0;
 int digitTime1, digitTime2, digitTime3, digitTime4,
     digitDate1, digitDate2, digitDate3, digitDate4;
@@ -221,6 +220,14 @@ void hide_digits(int col, int numTime)
     text_layer_set_text(text_layer[col], &digits[col][0]);
 }
 
+void revealDayOfWeek(struct tm* tick_time)
+{
+    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK+1];
+    text_layer_set_text(layer, s_dayOfWeek_buffer);
+    layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
+    text_layer_set_text(layer, "");
+}
+
 void revealDateTime(void *a_pData)
 {
     switch (m_nRevealStep)
@@ -268,6 +275,9 @@ void revealDateTime(void *a_pData)
             text_layer_set_text(text_layer[3], &digits[3][0]);
             digitsTime[6] = '0' + digitTime4;
             ++m_nRevealStep;
+            time_t now = time(NULL);
+            struct tm *tick_time = localtime(&now);
+            revealDayOfWeek(tick_time);
             break;
     }
     text_layer_set_text(m_ptxtDate, digitsDate);
@@ -310,21 +320,13 @@ void changeDayOfWeek(struct tm* tick_time)
     strftime(s_dayOfWeek_buffer, sizeof(s_dayOfWeek_buffer), "%a", tick_time);
     toUpperCase(s_dayOfWeek_buffer, sizeof(s_dayOfWeek_buffer));
 
-    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
+    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK+1];
+    text_layer_set_text(layer, "");
+    layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
     text_layer_set_text(layer, s_dayOfWeek_buffer);
     //text_layer_set_background_color(layer, m_bIsAm? GColorRed: GColorBlue);
     //text_layer_set_background_color(layer, GColorBlack);
     text_layer_set_background_color(layer, m_bBtConnected? (m_bIsAm? GColorRed: GColorBlue): GColorBlack);
-
-//    to_rect[TXT_LAYER_DAY_OF_WEEK] = layer_get_frame((Layer*)layer);
-//    to_rect[TXT_LAYER_DAY_OF_WEEK].origin.y = 0;
-//
-//    if (animations[TXT_LAYER_DAY_OF_WEEK])
-//        property_animation_destroy(animations[TXT_LAYER_DAY_OF_WEEK]);
-//
-//    animations[TXT_LAYER_DAY_OF_WEEK] = property_animation_create_layer_frame((Layer*)layer, NULL, &to_rect[TXT_LAYER_DAY_OF_WEEK]);
-//    animation_set_duration((Animation*) animations[TXT_LAYER_DAY_OF_WEEK], 1000);
-//    animation_schedule((Animation*) animations[TXT_LAYER_DAY_OF_WEEK]);
 }
 
 void display_time(struct tm* tick_time) {
@@ -463,7 +465,8 @@ void handle_init(void)
 
     srand(time(NULL));
 
-    s_custom_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_42));
+    s_custom_font30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_30));
+    s_custom_font42 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_42));
 
     for (int i = 0; i < 4; ++i)
     {
@@ -482,7 +485,7 @@ void handle_init(void)
         text_layer_set_font(text_layer[i],
             //fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
             //fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS)); //Can't use, as numbers only
-            s_custom_font);
+            s_custom_font42);
         text_layer_set_text(text_layer[i], &digits[i][0]);
         text_layer_set_text_alignment(text_layer[i], GTextAlignmentCenter);
         layer_add_child(root_layer, text_layer_get_layer(text_layer[i]));
@@ -490,18 +493,26 @@ void handle_init(void)
     //Example: view live log using "pebble logs --phone=192.168.1.X" command
     //APP_LOG(APP_LOG_LEVEL_DEBUG, "digits0 %s", digits[0]);
 
-    //Add 'day of week' top row layer above 'digits' layers:
+    //Add encoded 'day of week' top row layer above 'digits' layers:
     text_layer[TXT_LAYER_DAY_OF_WEEK] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
     //text_layer[TXT_LAYER_DAY_OF_WEEK] = text_layer_create(GRect(6, -8, frame.size.w / 2 - 2, /*32*/64));
     //layer_set_bounds((Layer*)text_layer[TXT_LAYER_DAY_OF_WEEK], GRect(6, -8, frame.size.w / 2 - 2, 10));
     text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK], GColorWhite);
     text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK], GColorClear);
-    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK],
-        fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK], s_custom_font30);
     text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK], s_dayOfWeek_buffer);
     text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextAlignmentLeft);
     //text_layer_set_overflow_mode(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextOverflowModeWordWrap);
     layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK]));
+    //Add decoded 'day of week' layer
+    text_layer[TXT_LAYER_DAY_OF_WEEK+1] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
+    text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GColorWhite);
+    text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GColorClear);
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK+1],
+        fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+    text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK+1], "");
+    text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GTextAlignmentLeft);
+    layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK+1]));
 
     //Add decoded (roman numeral) date (ddmm) & time layers above enigma (enigma alien text) layers
     m_ptxtDate = text_layer_create(GRect(0, frame.size.h / 8 - 7, frame.size.w, frame.size.h / 4));
@@ -543,11 +554,13 @@ void handle_deinit(void) {
         if (animations[i])
             property_animation_destroy(animations[i]);
     }
+    text_layer_destroy(text_layer[5]);
     text_layer_destroy(m_ptxtDate);
     text_layer_destroy(m_ptxtTime);
     layer_destroy(time_box_layer);
     layer_destroy(battery_level_layer);
-    fonts_unload_custom_font(s_custom_font);
+    fonts_unload_custom_font(s_custom_font30);
+    fonts_unload_custom_font(s_custom_font42);
     app_timer_cancel(m_sptimer1);
     window_destroy(my_window);
 }
@@ -557,4 +570,3 @@ int main(void) {
     app_event_loop();
     handle_deinit();
 }
-
