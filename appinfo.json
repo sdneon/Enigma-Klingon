@@ -34,7 +34,7 @@
   "longName": "Enigma Klingon (Digital, Color) Watch Face",
   "versionCode": 1,
   "companyName": "neon",
-  "versionLabel": "1.1",
+  "versionLabel": "1.2",
   "uuid": "ecc8f112-318f-4ef2-be11-53c63f8af13f",
   "watchapp": {
     "watchface": true
