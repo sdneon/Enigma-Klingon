@@ -32,7 +32,7 @@
 #define DECODE_ALL (DECODE_WEEKDAY | DECODE_DATE | DECODE_TIME)
 
 /**
- * Specify this flag as control decoding of date & time.
+ * Specify this flag as control decoding of date & time. Refer to bitmasks above. E.g.:
  * 0: disable
  * 1: decode weekday name
  * 6: decode date & time (less weekday name)
