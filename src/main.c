@@ -453,9 +453,11 @@ void changeDayOfWeek(struct tm* tick_time)
 }
 
 void display_time(struct tm* tick_time) {
-    //erase decoded numerals:
+    //erase decoded numerals & restore encoded text:
+    memcpy(digits, digitsTimeBkup, (4*32));
     for (int i = 0; i < 4; ++i)
     {
+        text_layer_set_text(text_layer[i], digits[i]);
         digitsDecoded[i][0] = 32;
         digitsDecoded[i][2] = 32;
         text_layer_set_text(lyrTxtDecoded[i], digitsDecoded[i]);
