@@ -25,11 +25,14 @@ Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face
 ![screenshot 1](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-1-AM.png "Watch face: AM, bluetooth connected, battery not charging")
 Watch face: AM, bluetooth connected, battery not charging
 
-![screenshot 2](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-2-AM,DC.png "Watch face: AM, bluetooth disconnected, battery charging")
-Watch face: AM, bluetooth disconnected, battery charging
+![screenshot 2](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-2-AM,DC.png "Watch face: AM, bluetooth disconnected, battery low")
+Watch face: AM, bluetooth disconnected, battery low
 
 ![screenshot 3](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-3-PM,charging.png "Watch face: PM, bluetooth connected, battery charging")
 Watch face: PM, bluetooth connected, battery charging
+
+![screenshot 4](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-4-before-decode.png "Watch face: AM, bluetooth connected, before decode")
+Watch face: AM, bluetooth connected, before decode
 
 ## Build
 You will need to download the [Klingon font](http://www.dafont.com/klingon-font.font) and place it in _/resources/fonts_ folder.
@@ -37,11 +40,15 @@ You will need to download the [Klingon font](http://www.dafont.com/klingon-font.
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
-* v1.0 work-in-progress
+* v1.1
+  * Date & time text alignments are now OK.
+  * Added (DECODE) flag to choose any combination of weekday name, data & time to decode. May choose to decode nothing if you can read Klingon well =)
+* v1.0
   * Initial draft.
   
 ## TODO
-1. Current date/time are quick single row 'text fields'. As the LOCO font used is not fixed width, times like '1117' will not look good as the digits do not align with the columns nicely. May need to split into 4 separate columns (text layers) like the underlying enigma text.
+1. Add option to re-encode after some time or inactivity?
+2. Expose configuration options?
 
 ## Credits
 * [Klingon font](http://www.dafont.com/klingon-font.font) by kaiserzharkhan - thanks for creating such a beautiful font.
