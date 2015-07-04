@@ -23,10 +23,13 @@
  **/
 #include <pebble.h>
 
-//bitmasks for DECODE flag:
+//bitmasks for m_nDecodeMode flag:
 #define DECODE_WEEKDAY  1
 #define DECODE_DATE     2
 #define DECODE_TIME     4
+
+#define DECODE_DATETIME_ONLY (DECODE_DATE | DECODE_TIME)
+#define DECODE_ALL (DECODE_WEEKDAY | DECODE_DATE | DECODE_TIME)
 
 /**
  * Specify this flag as control decoding of date & time.
@@ -35,7 +38,7 @@
  * 6: decode date & time (less weekday name)
  * 7: decode all
  **/
-#define DECODE 7
+#define DECODE DECODE_ALL
 
 
 #define TXT_LAYER_DAY_OF_WEEK_ENCODED 4
@@ -68,6 +71,7 @@ static AppTimer *m_sptimer1, m_sptimer2;
 static int m_nRevealStep = 0;
 int digitTime1, digitTime2, digitTime3, digitTime4,
     digitDate1, digitDate2, digitDate3, digitDate4;
+static int m_nDecodeMode = DECODE;
 
 //forward declaration
 void animation_stopped(struct Animation *animation);
@@ -240,8 +244,10 @@ void hide_digits(int col, int numTime)
     text_layer_set_text(text_layer[col], &digits[col][0]);
 }
 
-void revealDayOfWeek(struct tm* tick_time)
+void revealDayOfWeek()
 {
+    time_t now = time(NULL);
+    struct tm *tick_time = localtime(&now);
     TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED];
     text_layer_set_text(layer, s_dayOfWeek_buffer);
     layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
@@ -253,64 +259,93 @@ void revealDateTime(void *a_pData)
     switch (m_nRevealStep)
     {
         case 0:
-            //clear encoded digit:
-            change_digit(0, digitTime1, ' ', -2);
-            text_layer_set_text(text_layer[0], &digits[0][0]);
-            //show decoded digit:
-            digitsDecoded[0][0] = '0' + digitDate1;
-            text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
-            //schedule next step in animation:
-            ++m_nRevealStep;
-            m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            if (m_nDecodeMode & DECODE_DATE)
+            {
+                //clear encoded digit:
+                change_digit(0, digitTime1, ' ', -2);
+                text_layer_set_text(text_layer[0], &digits[0][0]);
+                //show decoded digit:
+                digitsDecoded[0][0] = '0' + digitDate1;
+                text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
+            }
+            if (m_nDecodeMode & DECODE_DATETIME_ONLY)
+            {
+                //schedule next step in animation:
+                ++m_nRevealStep;
+                m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            }
+            else if (m_nDecodeMode & DECODE_WEEKDAY)
+            {
+                revealDayOfWeek();
+            }
             break;
         case 1:
-            change_digit(1, digitTime2, ' ', -2);
-            text_layer_set_text(text_layer[1], &digits[1][0]);
-            change_digit(0, digitTime1, ' ', 0);
-            text_layer_set_text(text_layer[0], &digits[0][0]);
-            digitsDecoded[1][0] = '0' + digitDate2;
-            text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
-            digitsDecoded[0][2] = '0' + digitTime1;
-            text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
+            if (m_nDecodeMode & DECODE_DATE)
+            {
+                change_digit(1, digitTime2, ' ', -2);
+                text_layer_set_text(text_layer[1], &digits[1][0]);
+                digitsDecoded[1][0] = '0' + digitDate2;
+                text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
+            }
+            if (m_nDecodeMode & DECODE_TIME)
+            {
+                change_digit(0, digitTime1, ' ', 0);
+                text_layer_set_text(text_layer[0], &digits[0][0]);
+                digitsDecoded[0][2] = '0' + digitTime1;
+                text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
+            }
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
         case 2:
-            change_digit(2, digitTime3, ' ', -2);
-            text_layer_set_text(text_layer[2], &digits[2][0]);
-            change_digit(1, digitTime2, ' ', 0);
-            text_layer_set_text(text_layer[1], &digits[1][0]);
-            digitsDecoded[2][0] = '0' + digitDate3;
-            text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
-            digitsDecoded[1][2] = '0' + digitTime2;
-            text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
+            if (m_nDecodeMode & DECODE_DATE)
+            {
+                change_digit(2, digitTime3, ' ', -2);
+                text_layer_set_text(text_layer[2], &digits[2][0]);
+                digitsDecoded[2][0] = '0' + digitDate3;
+                text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
+            }
+            if (m_nDecodeMode & DECODE_TIME)
+            {
+                change_digit(1, digitTime2, ' ', 0);
+                text_layer_set_text(text_layer[1], &digits[1][0]);
+                digitsDecoded[1][2] = '0' + digitTime2;
+                text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
+            }
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
         case 3:
-            change_digit(3, digitTime4, ' ', -2);
-            text_layer_set_text(text_layer[3], &digits[3][0]);
-            change_digit(2, digitTime3, ' ', 0);
-            text_layer_set_text(text_layer[2], &digits[2][0]);
-            digitsDecoded[3][0] = '0' + digitDate4;
-            text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
-            digitsDecoded[2][2] = '0' + digitTime3;
-            text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
+            if (m_nDecodeMode & DECODE_DATE)
+            {
+                change_digit(3, digitTime4, ' ', -2);
+                text_layer_set_text(text_layer[3], &digits[3][0]);
+                digitsDecoded[3][0] = '0' + digitDate4;
+                text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
+            }
+            if (m_nDecodeMode & DECODE_TIME)
+            {
+                change_digit(2, digitTime3, ' ', 0);
+                text_layer_set_text(text_layer[2], &digits[2][0]);
+                digitsDecoded[2][2] = '0' + digitTime3;
+                text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
+            }
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
         case 4:
         default:
-            change_digit(3, digitTime4, ' ', 0);
-            text_layer_set_text(text_layer[3], &digits[3][0]);
-            digitsDecoded[3][2] = '0' + digitTime4;
-            text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
-            ++m_nRevealStep;
-            time_t now = time(NULL);
-            struct tm *tick_time = localtime(&now);
-            if (DECODE & DECODE_WEEKDAY)
+            if (m_nDecodeMode & DECODE_TIME)
             {
-                revealDayOfWeek(tick_time);
+                change_digit(3, digitTime4, ' ', 0);
+                text_layer_set_text(text_layer[3], &digits[3][0]);
+                digitsDecoded[3][2] = '0' + digitTime4;
+                text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
+            }
+            ++m_nRevealStep;
+            if (m_nDecodeMode & DECODE_WEEKDAY)
+            {
+                revealDayOfWeek();
             }
             break;
     }
@@ -318,7 +353,7 @@ void revealDateTime(void *a_pData)
 
 void animation_stopped(struct Animation *animation)
 {
-    if (DECODE > 0)
+    if (m_nDecodeMode > 0)
     {
         m_nRevealStep = 0;
         m_sptimer1 = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, NULL);
