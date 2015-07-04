@@ -22,6 +22,9 @@ Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face
 'Year' display has been removed, so as to show more Klingon text.
 
 ### Screenshots
+![screenshot 5](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-5.png "Watch face: v1.2")
+Watch face: v1.2
+
 ![screenshot 1](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-1-AM.png "Watch face: AM, bluetooth connected, battery not charging")
 Watch face: AM, bluetooth connected, battery not charging
 

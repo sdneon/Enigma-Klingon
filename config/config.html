@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <title>Enigma+ Klingon Configuration</title>
+  </head>
+  <body bgcolor="#47484B">
+    <font face="helvetica" color="white">
+    <h2>Enigma+ Klingon</h2>
+    <h3><i>Choose Watch Face Settings</i></h3>
+
+    <p>Decode alien text:
+    <select id="decode_select">
+      <option value="0">None</option>
+      <option value="7" selected>All</option>
+      <option value="4">Time only</option>
+      <option value="6">Date &amp; Time only</option>
+    </select>
+    </p>
+
+    <p>
+    <button id="save_button">Save</button>
+    </p>
+
+    <script>
+      //Setup to allow easy adding more options later
+      function saveOptions() {
+        var decodeSelect = document.getElementById("decode_select");
+        var options = {
+          "decode": decodeSelect.options[decodeSelect.selectedIndex].value
+        }
+
+        return options;
+      };
+      var submitButton = document.getElementById("save_button");
+      submitButton.addEventListener("click",
+        function() {
+          console.log("Submit");
+          var options = saveOptions();
+          var location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(options));
+
+          document.location = location;
+        },
+      false);
+    </script>
+  </body>
+</html>
