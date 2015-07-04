@@ -1,6 +1,6 @@
 Enigma Klingon
 ==============
-Enigma watch face variant with Klingon text for Pebble Time. (Colour, Digital).
+Enigma watch face variant with Klingon text (from Star Trek universe) for Pebble Time. (Colour, Digital).
 The time & weekday name are initially in Klingon and subsequently decoded (to roman numerals & English text respectively). Display (excluding time) reverts to Klingon after 2 secs; shake to reveal again.
 
 Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face.
@@ -39,7 +39,7 @@ Watch face: AM, bluetooth connected, before decode
 
 ## Build
 You will need to download the [Klingon font](http://www.dafont.com/klingon-font.font) and place it in _/resources/fonts_ folder.
- * You could use alternative fonts for other alien texts or Wingdings, etc. Just change the _file_ paths in appinfo.json acoordingly.
+ * You could use alternative fonts for other alien texts or Wingdings, etc. Just change the _file_ paths in appinfo.json accordingly.
    * As an example, /build/Enigma-Aurebesh.pbw has been uploaded, demonstrating the use of the [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe.
 
 ![screenshot 5](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/Aurebesh Cantina Bold.png "Watch face: Aurebesh, Star Wars font")
@@ -63,5 +63,5 @@ Watch face: Aurebesh, Star Wars font
 
 ## Credits
 Thanks for creating these beautiful fonts:
-* [Klingon font](http://www.dafont.com/klingon-font.font) by kaiserzharkhan.
+* [Klingon font](http://www.dafont.com/klingon-font.font) from Star Trek universe, by kaiserzharkhan.
 * [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe, by Pixel Saga.
