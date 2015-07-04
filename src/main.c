@@ -66,6 +66,7 @@ GRect to_rect[6];
 int center;
 
 char digits[4][32], digitsBkup[4][32], //4 columns of encoded enigma digits
+    digitsTimeBkup[4][32],
     digitsDecoded[4][5]; //4 colums (2 rows) of decoded digits
 int offsets[4][10];
 int order[4][10];
@@ -271,7 +272,7 @@ void hideDateTime(void *a_pData)
         return; //skip if animation in progress
     }
     //restore digits:
-    memcpy(digits, digitsBkup, (4*32));
+    memcpy(digits, digitsTimeBkup, (4*32));
     change_digit(0, digitTime1, ' ', 0);
     change_digit(1, digitTime2, ' ', 0);
     change_digit(2, digitTime3, ' ', 0);
@@ -496,6 +497,7 @@ void display_time(struct tm* tick_time) {
     change_digits(1, digitTime2, digitDate2, false);
     change_digits(2, digitTime3, digitDate3, false);
     change_digits(3, digitTime4, digitDate4, true);
+    memcpy(digitsTimeBkup, digits, (4*32));
 
     //show day of week in row above ddmm (i.e. 1st row):
     changeDayOfWeek(tick_time);
@@ -675,6 +677,7 @@ void handle_deinit(void)
     accel_tap_service_unsubscribe();
     bluetooth_connection_service_unsubscribe();
     battery_state_service_unsubscribe();
+    tick_timer_service_unsubscribe();
     int i;
     for (i = 0; i < 6; ++i)
     {
@@ -689,7 +692,6 @@ void handle_deinit(void)
     {
         text_layer_destroy(lyrTxtDecoded[i]);
     }
-    text_layer_destroy(text_layer[5]);
     layer_destroy(time_box_layer);
     layer_destroy(battery_level_layer);
     fonts_unload_custom_font(s_custom_font30);
