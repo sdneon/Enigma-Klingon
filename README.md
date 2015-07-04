@@ -40,6 +40,11 @@ Watch face: AM, bluetooth connected, before decode
 ## Build
 You will need to download the [Klingon font](http://www.dafont.com/klingon-font.font) and place it in _/resources/fonts_ folder.
  * You could use alternative fonts for other alien texts or Wingdings, etc. Just change the _file_ paths in appinfo.json acoordingly.
+   * As an example, /build/Enigma-Aurebesh.pbw has been uploaded, demonstrating the use of the [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe.
+
+![screenshot 5](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/Aurebesh Cantina Bold.png "Watch face: Aurebesh, Star Wars font")
+Watch face: Aurebesh, Star Wars font
+
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
@@ -57,4 +62,6 @@ You will need to download the [Klingon font](http://www.dafont.com/klingon-font.
 1. Expose configuration options? Unfortunately, this SDK feature seems to be only available for Pebble JS, and not Pebble C.
 
 ## Credits
-* [Klingon font](http://www.dafont.com/klingon-font.font) by kaiserzharkhan - thanks for creating such a beautiful font.
+Thanks for creating these beautiful fonts:
+* [Klingon font](http://www.dafont.com/klingon-font.font) by kaiserzharkhan.
+* [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe, by Pixel Saga.
