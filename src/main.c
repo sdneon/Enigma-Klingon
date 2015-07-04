@@ -23,21 +23,41 @@
  **/
 #include <pebble.h>
 
-#define TXT_LAYER_DAY_OF_WEEK 4
+//bitmasks for DECODE flag:
+#define DECODE_WEEKDAY  1
+#define DECODE_DATE     2
+#define DECODE_TIME     4
+
+/**
+ * Specify this flag as control decoding of date & time.
+ * 0: disable
+ * 1: decode weekday name
+ * 6: decode date & time (less weekday name)
+ * 7: decode all
+ **/
+#define DECODE 7
+
+
+#define TXT_LAYER_DAY_OF_WEEK_ENCODED 4
+#define TXT_LAYER_DAY_OF_WEEK_DECODED 5
 #define BATTERY_LVL_COL 2
 
 //Interval (in ms) to decode/reveal date & time
 #define INTERVAL_REVEAL_INITIAL 1000
 #define INTERVAL_REVEAL_NEXT 15
 
+//height of a row
+#define ROW_HEIGHT 47
+
 Window *my_window;
 Layer *time_box_layer, *battery_level_layer;
-TextLayer *text_layer[6], *m_ptxtDate, *m_ptxtTime;
+TextLayer *text_layer[6], *lyrTxtDecoded[4];
 PropertyAnimation *animations[5] = {0};
 GRect to_rect[6];
 int center;
 
-char digits[4][32], digitsBkup[4][32], digitsDate[8] = {32}, digitsTime[8] = {32};
+char digits[4][32], digitsBkup[4][32], //4 columns of encoded enigma digits
+    digitsDecoded[4][5]; //4 colums (2 rows) of decoded digits
 int offsets[4][10];
 int order[4][10];
 bool m_bIsAm = false;
@@ -59,7 +79,7 @@ void animation_stopped(struct Animation *animation);
 bool m_bBtConnected = false;
 static void bt_handler(bool connected) {
     m_bBtConnected = connected;
-    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
+    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
     if (layer)
     {
         text_layer_set_background_color(layer, m_bBtConnected? (m_bIsAm? GColorRed: GColorBlue): GColorBlack);
@@ -222,9 +242,9 @@ void hide_digits(int col, int numTime)
 
 void revealDayOfWeek(struct tm* tick_time)
 {
-    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK+1];
+    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED];
     text_layer_set_text(layer, s_dayOfWeek_buffer);
-    layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
+    layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
     text_layer_set_text(layer, "");
 }
 
@@ -233,9 +253,13 @@ void revealDateTime(void *a_pData)
     switch (m_nRevealStep)
     {
         case 0:
+            //clear encoded digit:
             change_digit(0, digitTime1, ' ', -2);
             text_layer_set_text(text_layer[0], &digits[0][0]);
-            digitsDate[0] = '0' + digitDate1;
+            //show decoded digit:
+            digitsDecoded[0][0] = '0' + digitDate1;
+            text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
+            //schedule next step in animation:
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
@@ -244,8 +268,10 @@ void revealDateTime(void *a_pData)
             text_layer_set_text(text_layer[1], &digits[1][0]);
             change_digit(0, digitTime1, ' ', 0);
             text_layer_set_text(text_layer[0], &digits[0][0]);
-            digitsDate[2] = '0' + digitDate2;
-            digitsTime[0] = '0' + digitTime1;
+            digitsDecoded[1][0] = '0' + digitDate2;
+            text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
+            digitsDecoded[0][2] = '0' + digitTime1;
+            text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
@@ -254,8 +280,10 @@ void revealDateTime(void *a_pData)
             text_layer_set_text(text_layer[2], &digits[2][0]);
             change_digit(1, digitTime2, ' ', 0);
             text_layer_set_text(text_layer[1], &digits[1][0]);
-            digitsDate[4] = '0' + digitDate3;
-            digitsTime[2] = '0' + digitTime2;
+            digitsDecoded[2][0] = '0' + digitDate3;
+            text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
+            digitsDecoded[1][2] = '0' + digitTime2;
+            text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
@@ -264,8 +292,10 @@ void revealDateTime(void *a_pData)
             text_layer_set_text(text_layer[3], &digits[3][0]);
             change_digit(2, digitTime3, ' ', 0);
             text_layer_set_text(text_layer[2], &digits[2][0]);
-            digitsDate[6] = '0' + digitDate4;
-            digitsTime[4] = '0' + digitTime3;
+            digitsDecoded[3][0] = '0' + digitDate4;
+            text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
+            digitsDecoded[2][2] = '0' + digitTime3;
+            text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
             ++m_nRevealStep;
             m_sptimer1 = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
             break;
@@ -273,21 +303,26 @@ void revealDateTime(void *a_pData)
         default:
             change_digit(3, digitTime4, ' ', 0);
             text_layer_set_text(text_layer[3], &digits[3][0]);
-            digitsTime[6] = '0' + digitTime4;
+            digitsDecoded[3][2] = '0' + digitTime4;
+            text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
             ++m_nRevealStep;
             time_t now = time(NULL);
             struct tm *tick_time = localtime(&now);
-            revealDayOfWeek(tick_time);
+            if (DECODE & DECODE_WEEKDAY)
+            {
+                revealDayOfWeek(tick_time);
+            }
             break;
     }
-    text_layer_set_text(m_ptxtDate, digitsDate);
-    text_layer_set_text(m_ptxtTime, digitsTime);
 }
 
 void animation_stopped(struct Animation *animation)
 {
-    m_nRevealStep = 0;
-    m_sptimer1 = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, NULL);
+    if (DECODE > 0)
+    {
+        m_nRevealStep = 0;
+        m_sptimer1 = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, NULL);
+    }
 }
 
 /**
@@ -320,9 +355,9 @@ void changeDayOfWeek(struct tm* tick_time)
     strftime(s_dayOfWeek_buffer, sizeof(s_dayOfWeek_buffer), "%a", tick_time);
     toUpperCase(s_dayOfWeek_buffer, sizeof(s_dayOfWeek_buffer));
 
-    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK+1];
+    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED];
     text_layer_set_text(layer, "");
-    layer = text_layer[TXT_LAYER_DAY_OF_WEEK];
+    layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
     text_layer_set_text(layer, s_dayOfWeek_buffer);
     //text_layer_set_background_color(layer, m_bIsAm? GColorRed: GColorBlue);
     //text_layer_set_background_color(layer, GColorBlack);
@@ -331,10 +366,12 @@ void changeDayOfWeek(struct tm* tick_time)
 
 void display_time(struct tm* tick_time) {
     //erase decoded numerals:
-    digitsDate[0] = 32; digitsDate[2] = 32; digitsDate[4] = 32; digitsDate[6] = 32;
-    digitsTime[0] = 32; digitsTime[2] = 32; digitsTime[4] = 32; digitsTime[6] = 32;
-    text_layer_set_text(m_ptxtDate, digitsDate);
-    text_layer_set_text(m_ptxtTime, digitsTime);
+    for (int i = 0; i < 4; ++i)
+    {
+        digitsDecoded[i][0] = 32;
+        digitsDecoded[i][2] = 32;
+        text_layer_set_text(lyrTxtDecoded[i], digitsDecoded[i]);
+    }
 
     int h = tick_time->tm_hour;
     int m = tick_time->tm_min;
@@ -440,13 +477,6 @@ void handle_init(void)
     window_set_background_color(my_window, GColorBlack);
 
     s_dayOfWeek_buffer[0] = 0;
-    for (int j = 0; j < 8; ++j)
-    {
-        digitsDate[j] = 32;
-        digitsTime[j] = 32;
-    }
-    digitsDate[7] = 0;
-    digitsTime[7] = 0;
 
     Layer *root_layer = window_get_root_layer(my_window);
     GRect frame = layer_get_frame(root_layer);
@@ -489,46 +519,39 @@ void handle_init(void)
         text_layer_set_text(text_layer[i], &digits[i][0]);
         text_layer_set_text_alignment(text_layer[i], GTextAlignmentCenter);
         layer_add_child(root_layer, text_layer_get_layer(text_layer[i]));
+
+        strncpy(digitsDecoded[i], " \n \n\0", 5);
+        lyrTxtDecoded[i] = text_layer_create(GRect(i*frame.size.w/4, 14, frame.size.w/4, 2*ROW_HEIGHT));
+        text_layer_set_text_color(lyrTxtDecoded[i], GColorWhite);
+        text_layer_set_background_color(lyrTxtDecoded[i], GColorClear);
+        text_layer_set_font(lyrTxtDecoded[i], fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+        text_layer_set_text(lyrTxtDecoded[i], ""); //&digits[i][0]);
+        text_layer_set_text_alignment(lyrTxtDecoded[i], GTextAlignmentCenter);
+        layer_add_child(root_layer, text_layer_get_layer(lyrTxtDecoded[i]));
     }
     //Example: view live log using "pebble logs --phone=192.168.1.X" command
     //APP_LOG(APP_LOG_LEVEL_DEBUG, "digits0 %s", digits[0]);
 
     //Add encoded 'day of week' top row layer above 'digits' layers:
-    text_layer[TXT_LAYER_DAY_OF_WEEK] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
-    //text_layer[TXT_LAYER_DAY_OF_WEEK] = text_layer_create(GRect(6, -8, frame.size.w / 2 - 2, /*32*/64));
-    //layer_set_bounds((Layer*)text_layer[TXT_LAYER_DAY_OF_WEEK], GRect(6, -8, frame.size.w / 2 - 2, 10));
-    text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK], GColorWhite);
-    text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK], GColorClear);
-    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK], s_custom_font30);
-    text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK], s_dayOfWeek_buffer);
-    text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextAlignmentLeft);
-    //text_layer_set_overflow_mode(text_layer[TXT_LAYER_DAY_OF_WEEK], GTextOverflowModeWordWrap);
-    layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK]));
+    text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
+    //text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED] = text_layer_create(GRect(6, -8, frame.size.w / 2 - 2, /*32*/64));
+    //layer_set_bounds((Layer*)text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GRect(6, -8, frame.size.w / 2 - 2, 10));
+    text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GColorWhite);
+    text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GColorClear);
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], s_custom_font30);
+    text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], s_dayOfWeek_buffer);
+    text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GTextAlignmentLeft);
+    //text_layer_set_overflow_mode(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GTextOverflowModeWordWrap);
+    layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED]));
     //Add decoded 'day of week' layer
-    text_layer[TXT_LAYER_DAY_OF_WEEK+1] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
-    text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GColorWhite);
-    text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GColorClear);
-    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK+1],
+    text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
+    text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GColorWhite);
+    text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GColorClear);
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED],
         fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
-    text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK+1], "");
-    text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK+1], GTextAlignmentLeft);
-    layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK+1]));
-
-    //Add decoded (roman numeral) date (ddmm) & time layers above enigma (enigma alien text) layers
-    m_ptxtDate = text_layer_create(GRect(0, frame.size.h / 8 - 7, frame.size.w, frame.size.h / 4));
-    m_ptxtTime = text_layer_create(GRect(0, frame.size.h * 3 / 8 - 7, frame.size.w, frame.size.h / 4));
-    text_layer_set_text_color(m_ptxtDate, GColorWhite);
-    text_layer_set_background_color(m_ptxtDate, GColorClear);
-    text_layer_set_font(m_ptxtDate, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
-    text_layer_set_text(m_ptxtDate, "");
-    text_layer_set_text_alignment(m_ptxtDate, GTextAlignmentLeft);
-    layer_add_child(root_layer, text_layer_get_layer(m_ptxtDate));
-    text_layer_set_text_color(m_ptxtTime, GColorWhite);
-    text_layer_set_background_color(m_ptxtTime, GColorClear);
-    text_layer_set_font(m_ptxtTime, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
-    text_layer_set_text(m_ptxtTime, "");
-    text_layer_set_text_alignment(m_ptxtTime, GTextAlignmentLeft);
-    layer_add_child(root_layer, text_layer_get_layer(m_ptxtTime));
+    text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], "");
+    text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GTextAlignmentLeft);
+    layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED]));
 
     time_t now = time(NULL);
     struct tm *tick_time = localtime(&now);
@@ -547,16 +570,20 @@ void handle_init(void)
     battery_handler(battery_state_service_peek());
 }
 
-void handle_deinit(void) {
-    for (int i = 0; i < 5; ++i)
+void handle_deinit(void)
+{
+    int i;
+    for (i = 0; i < 5; ++i)
     {
         text_layer_destroy(text_layer[i]);
         if (animations[i])
             property_animation_destroy(animations[i]);
     }
+    for (i = 0; i < 4; ++i)
+    {
+        text_layer_destroy(lyrTxtDecoded[i]);
+    }
     text_layer_destroy(text_layer[5]);
-    text_layer_destroy(m_ptxtDate);
-    text_layer_destroy(m_ptxtTime);
     layer_destroy(time_box_layer);
     layer_destroy(battery_level_layer);
     fonts_unload_custom_font(s_custom_font30);
