@@ -1,7 +1,13 @@
 Enigma Klingon
 ==============
 Enigma watch face variant with Klingon text (from Star Trek universe) for Pebble Time. (Colour, Digital).
-The time & weekday name are initially in Klingon and subsequently decoded (to roman numerals & English text respectively). Display (excluding time) reverts to Klingon after 2 secs; shake to reveal again.
+You may now configure what information to display in decoded form (roman numerals for date & time, English text for weekday name); all other information remains in Klingon. Choices are:
+1. None (all info stays in Klingon)
+2. All
+3. Time only (default)
+4. Date & Time only
+
+Shake to decode all information temporarily for 5 secs.
 
 Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face.
 
@@ -48,6 +54,12 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
+* v1.3
+  * Expose configuration option to choose what to decode. You may choose from:
+    1. None (all info stays in Klingon)
+    2. All
+    3. Time only
+    4. Date & Time only
 * v1.2
   * Display (less time) reverts to alien text after 5 secs.
     * Shake to reveal again.
@@ -59,7 +71,7 @@ Watch face: Aurebesh, Star Wars font
   * Initial draft.
   
 ## TODO
-1. Expose configuration options? Unfortunately, this SDK feature seems to be only available for Pebble JS, and not Pebble C.
+* Fork a Rosetta/all-in-one version with choice of fonts, like Klingon, Aurebesh, etc.
 
 ## Credits
 Thanks for creating these beautiful fonts:

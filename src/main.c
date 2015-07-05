@@ -40,7 +40,7 @@
  * 6: decode date & time (less weekday name)
  * 7: decode all
  **/
-#define DECODE DECODE_ALL
+#define DECODE DECODE_TIME
 
 /**
  * Specify the time interval (ms) after reveal, when all text will be re-encoded.
@@ -76,13 +76,60 @@ static char s_dayOfWeek_buffer[4];
 static GFont s_custom_font30, s_custom_font42;
 static AppTimer *m_sptimerRevealAnimation, *m_sptimerRevert2Alien;
 static int m_nRevealStep = -1;
-static bool m_bRevealed = false;
 int digitTime1, digitTime2, digitTime3, digitTime4,
     digitDate1, digitDate2, digitDate3, digitDate4;
 static int m_nDecodeMode = DECODE;
+static bool m_bUpdatingDisplay = false, m_bReady = false;
 
 //forward declaration
 void animation_stopped(struct Animation *animation);
+void display_time(struct tm* tick_time);
+
+//
+//Configuration stuff via AppMessage API
+//
+#define KEY_DECODE 0
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+    // Get the first pair
+    Tuple *t = dict_read_first(iterator);
+
+    // Process all pairs present
+    while(t != NULL) {
+        // Process this pair's key
+        //APP_LOG(APP_LOG_LEVEL_DEBUG, "Key:%d received with value:%d", (int)t->key, (int)t->value->int32);
+        switch (t->key) {
+            case KEY_DECODE:
+                m_nDecodeMode = t->value->int32;
+                if (m_bReady && !m_bUpdatingDisplay)
+                {
+//                    APP_LOG(APP_LOG_LEVEL_DEBUG, "Ready to update display");
+                    time_t now = time(NULL);
+                    struct tm *tick_time = localtime(&now);
+                    display_time(tick_time);
+                }
+//                else
+//                {
+//                    APP_LOG(APP_LOG_LEVEL_DEBUG, "XXX NOT Ready to update display");
+//                }
+                break;
+        }
+
+        // Get next pair, if any
+        t = dict_read_next(iterator);
+    }
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+}
 
 
 //
@@ -262,6 +309,7 @@ void revealDayOfWeek()
     //hide encoded/alien weekday name:
     layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
     text_layer_set_text(layer, "");
+    m_bUpdatingDisplay = false;
 }
 
 #ifdef INTERVAL_REENCODE
@@ -273,25 +321,43 @@ void hideDateTime(void *a_pData)
     }
     //restore digits:
     memcpy(digits, digitsTimeBkup, (4*32));
-    change_digit(0, digitTime1, ' ', 0);
-    change_digit(1, digitTime2, ' ', 0);
-    change_digit(2, digitTime3, ' ', 0);
-    change_digit(3, digitTime4, ' ', 0);
+    if (m_nDecodeMode & DECODE_TIME)
+    {
+        change_digit(0, digitTime1, ' ', 0);
+        change_digit(1, digitTime2, ' ', 0);
+        change_digit(2, digitTime3, ' ', 0);
+        change_digit(3, digitTime4, ' ', 0);
+    }
+    if (m_nDecodeMode & DECODE_DATE)
+    {
+        change_digit(0, digitTime1, ' ', -2);
+        change_digit(1, digitTime2, ' ', -2);
+        change_digit(2, digitTime3, ' ', -2);
+        change_digit(3, digitTime4, ' ', -2);
+    }
     //show encoded/alien date & time:
     for (int i = 0; i < 4; ++i)
     {
         text_layer_set_text(text_layer[i], digits[i]);
-        digitsDecoded[i][0] = 32; //hide date
-        //digitsDecoded[i][2] = 32; //don't hide time for now
+        if ((m_nDecodeMode & DECODE_DATE) == 0)
+        {
+            digitsDecoded[i][0] = 32; //hide date
+        }
+        if ((m_nDecodeMode & DECODE_TIME) == 0)
+        {
+            digitsDecoded[i][2] = 32; //hide time
+        }
         text_layer_set_text(lyrTxtDecoded[i], digitsDecoded[i]);
     }
-    //show encoded/alien weekday name:
-    TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
-    text_layer_set_text(layer, s_dayOfWeek_buffer);
-    //hide decoded weekday name:
-    layer = text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED];
-    text_layer_set_text(layer, "");
-    m_bRevealed = false;
+    if ((m_nDecodeMode & DECODE_WEEKDAY) == 0)
+    {
+        //show encoded/alien weekday name:
+        TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
+        text_layer_set_text(layer, s_dayOfWeek_buffer);
+        //hide decoded weekday name:
+        layer = text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED];
+        text_layer_set_text(layer, "");
+    }
 }
 #endif //INTERVAL_REENCODE
 
@@ -300,13 +366,15 @@ void hideDateTime(void *a_pData)
  * 1. Date row reveals first, one digit at a time (INTERVAL_REVEAL_NEXT interval).
  * 2. After one date digit, time row reveals, one digit at a time (INTERVAL_REVEAL_NEXT interval).
  * 3. When time is completely revealed, weekday name is revealed.
+ * @param a_pData (int) we use this to pass an integer flag denoting the decoding mode.
  **/
 void revealDateTime(void *a_pData)
 {
+    int nDecodeMode = (int)a_pData;
     switch (m_nRevealStep)
     {
         case 0:
-            if (m_nDecodeMode & DECODE_DATE)
+            if (nDecodeMode & DECODE_DATE)
             {
                 //clear encoded digit:
                 change_digit(0, digitTime1, ' ', -2);
@@ -315,28 +383,19 @@ void revealDateTime(void *a_pData)
                 digitsDecoded[0][0] = '0' + digitDate1;
                 text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
             }
-            if (m_nDecodeMode & DECODE_DATETIME_ONLY)
-            {
-                //schedule next step in animation:
-                ++m_nRevealStep;
-                m_bRevealed = true;
-                m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
-            }
-            else if (m_nDecodeMode & DECODE_WEEKDAY)
-            {
-                revealDayOfWeek();
-                m_nRevealStep = -1; //flag end of animation
-            }
+            //schedule next step in animation:
+            ++m_nRevealStep;
+            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, a_pData);
             break;
         case 1:
-            if (m_nDecodeMode & DECODE_DATE)
+            if (nDecodeMode & DECODE_DATE)
             {
                 change_digit(1, digitTime2, ' ', -2);
                 text_layer_set_text(text_layer[1], &digits[1][0]);
                 digitsDecoded[1][0] = '0' + digitDate2;
                 text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
             }
-            if (m_nDecodeMode & DECODE_TIME)
+            if (nDecodeMode & DECODE_TIME)
             {
                 change_digit(0, digitTime1, ' ', 0);
                 text_layer_set_text(text_layer[0], &digits[0][0]);
@@ -344,17 +403,17 @@ void revealDateTime(void *a_pData)
                 text_layer_set_text(lyrTxtDecoded[0], digitsDecoded[0]);
             }
             ++m_nRevealStep;
-            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, a_pData);
             break;
         case 2:
-            if (m_nDecodeMode & DECODE_DATE)
+            if (nDecodeMode & DECODE_DATE)
             {
                 change_digit(2, digitTime3, ' ', -2);
                 text_layer_set_text(text_layer[2], &digits[2][0]);
                 digitsDecoded[2][0] = '0' + digitDate3;
                 text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
             }
-            if (m_nDecodeMode & DECODE_TIME)
+            if (nDecodeMode & DECODE_TIME)
             {
                 change_digit(1, digitTime2, ' ', 0);
                 text_layer_set_text(text_layer[1], &digits[1][0]);
@@ -362,17 +421,17 @@ void revealDateTime(void *a_pData)
                 text_layer_set_text(lyrTxtDecoded[1], digitsDecoded[1]);
             }
             ++m_nRevealStep;
-            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, a_pData);
             break;
         case 3:
-            if (m_nDecodeMode & DECODE_DATE)
+            if (nDecodeMode & DECODE_DATE)
             {
                 change_digit(3, digitTime4, ' ', -2);
                 text_layer_set_text(text_layer[3], &digits[3][0]);
                 digitsDecoded[3][0] = '0' + digitDate4;
                 text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
             }
-            if (m_nDecodeMode & DECODE_TIME)
+            if (nDecodeMode & DECODE_TIME)
             {
                 change_digit(2, digitTime3, ' ', 0);
                 text_layer_set_text(text_layer[2], &digits[2][0]);
@@ -380,23 +439,26 @@ void revealDateTime(void *a_pData)
                 text_layer_set_text(lyrTxtDecoded[2], digitsDecoded[2]);
             }
             ++m_nRevealStep;
-            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, NULL);
+            m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_NEXT, (AppTimerCallback) revealDateTime, a_pData);
             break;
         case 4:
         default:
-            if (m_nDecodeMode & DECODE_TIME)
+            if (nDecodeMode & DECODE_TIME)
             {
                 change_digit(3, digitTime4, ' ', 0);
                 text_layer_set_text(text_layer[3], &digits[3][0]);
                 digitsDecoded[3][2] = '0' + digitTime4;
                 text_layer_set_text(lyrTxtDecoded[3], digitsDecoded[3]);
             }
-            if (m_nDecodeMode & DECODE_WEEKDAY)
+            if (nDecodeMode & DECODE_WEEKDAY)
             {
                 revealDayOfWeek();
             }
+            else
+            {
+                m_bUpdatingDisplay = false;
+            }
             m_nRevealStep = -1; //flag end of animation
-            m_bRevealed = true;
 #ifdef INTERVAL_REENCODE
             m_sptimerRevert2Alien = app_timer_register(INTERVAL_REENCODE, (AppTimerCallback) hideDateTime, NULL);
 #endif //INTERVAL_REENCODE
@@ -409,7 +471,11 @@ void animation_stopped(struct Animation *animation)
     if (m_nDecodeMode > 0)
     {
         m_nRevealStep = 0;
-        m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, NULL);
+        m_sptimerRevealAnimation = app_timer_register(INTERVAL_REVEAL_INITIAL, (AppTimerCallback) revealDateTime, (void*)m_nDecodeMode);
+    }
+    else
+    {
+        m_bUpdatingDisplay = false;
     }
 }
 
@@ -453,6 +519,11 @@ void changeDayOfWeek(struct tm* tick_time)
 }
 
 void display_time(struct tm* tick_time) {
+    if (m_bUpdatingDisplay)
+    {
+        return;
+    }
+    m_bUpdatingDisplay = true;
     //erase decoded numerals & restore encoded text:
     memcpy(digits, digitsTimeBkup, (4*32));
     for (int i = 0; i < 4; ++i)
@@ -560,11 +631,11 @@ void fill_order(int i) {
 
 static void tap_handler(AccelAxisType axis, int32_t direction)
 {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "tapped %i %i", (int)axis, (int)direction);
-    if (!m_bRevealed && (m_nRevealStep < 0)) //not revealed or animating
+    if ((m_nRevealStep < 0) && !m_bUpdatingDisplay //not animating/updating in progress
+        && (m_nDecodeMode != DECODE_ALL)) //not already in DECODE_ALL mode
     {
         m_nRevealStep = 0;
-        revealDateTime(NULL);
+        revealDateTime((void*)DECODE_ALL);
     }
 }
 
@@ -573,6 +644,14 @@ static void tap_handler(AccelAxisType axis, int32_t direction)
 //
 void handle_init(void)
 {
+    // Register callbacks
+    app_message_register_inbox_received(inbox_received_callback);
+    app_message_register_inbox_dropped(inbox_dropped_callback);
+    app_message_register_outbox_failed(outbox_failed_callback);
+    app_message_register_outbox_sent(outbox_sent_callback);
+    // Open AppMessage
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
     my_window = window_create();
     window_stack_push(my_window, true);
     window_set_background_color(my_window, GColorBlack);
@@ -672,6 +751,8 @@ void handle_init(void)
 
     // Subscribe to the Tap Service
     accel_tap_service_subscribe(tap_handler);
+
+    m_bReady = true;
 }
 
 void handle_deinit(void)
