@@ -639,11 +639,25 @@ static void tap_handler(AccelAxisType axis, int32_t direction)
     }
 }
 
+void readConfig()
+{
+    if (persist_exists(KEY_DECODE))
+    {
+        m_nDecodeMode = persist_read_int(KEY_DECODE);
+    }
+}
+
+void saveConfig()
+{
+    persist_write_int(KEY_DECODE, m_nDecodeMode);
+}
+
 //
 //Window setup sutff
 //
 void handle_init(void)
 {
+    readConfig();
     // Register callbacks
     app_message_register_inbox_received(inbox_received_callback);
     app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -761,6 +775,9 @@ void handle_deinit(void)
     bluetooth_connection_service_unsubscribe();
     battery_state_service_unsubscribe();
     tick_timer_service_unsubscribe();
+
+    saveConfig();
+
     int i;
     for (i = 0; i < 6; ++i)
     {
