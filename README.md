@@ -1,6 +1,10 @@
 Enigma Klingon
 ==============
-Enigma watch face variant with Klingon text (from Star Trek universe) for Pebble Time. (Colour, Digital).
+Enigma watch face variant with choice of alien text for Pebble Time. (Colour, Digital). _Language_ choices:
+* Klingon (from Star Trek universe) (default) ![screenshot Klingon](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-5.png "Watch face in Klingon")
+* Human ![screenshot human](https://raw.githubusercontent.com/sdneon/Enigma-plus/master/store/pebble-screenshot-1-AM.png "Watch face in Human")
+* Aurebesh (from Star Wars universe) ![screenshot aurebesh](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-6-aurebesh.png "Watch face in Aurebesh, Star Wars font")
+
 You may now configure what information to display in decoded form (roman numerals for date & time, English text for weekday name); all other information remains in Klingon. Choices are:
 1. None (all info stays in Klingon)
 2. All
@@ -28,9 +32,6 @@ Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face
 'Year' display has been removed, so as to show more Klingon text.
 
 ### Screenshots
-![screenshot 5](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-5.png "Watch face: v1.2")
-Watch face: v1.2
-
 ![screenshot 1](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-1-AM.png "Watch face: AM, bluetooth connected, battery not charging")
 Watch face: AM, bluetooth connected, battery not charging
 
@@ -54,6 +55,10 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
+* v2.0
+  * Aurebesh font integrated.
+  * Add choice of languages to configuration.
+  * Configuration opens with current settings.
 * v1.3
   * Expose configuration option to choose what to decode. You may choose from:
     1. None (all info stays in Klingon)
@@ -71,7 +76,7 @@ Watch face: Aurebesh, Star Wars font
   * Initial draft.
   
 ## TODO
-* Fork a Rosetta/all-in-one version with choice of fonts, like Klingon, Aurebesh, etc.
+* Investigate Pebble JS failure causing configuration page to fail to load.
 
 ## Credits
 Thanks for creating these beautiful fonts:

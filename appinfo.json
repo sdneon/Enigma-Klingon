@@ -3,7 +3,8 @@
     "configurable"
   ],
   "appKeys": {
-    "KEY_DECODE": 0
+    "KEY_DECODE": 0,
+    "KEY_LANG": 1
   },
   "resources": {
     "media": [
@@ -21,23 +22,35 @@
         ,{
             "characterRegex": "[0-9 ]",
             "type": "font",
-            "name": "FONT_CUSTOM_42",
+            "name": "FONT_CUSTOMA_42",
             "file": "fonts/klingon font.ttf"
         }
         ,{
             "characterRegex": "[MONTUEWDHFRISA]",
             "type": "font",
-            "name": "FONT_CUSTOM_30",
+            "name": "FONT_CUSTOMA_30",
             "file": "fonts/klingon font.ttf"
+        }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOMB_42",
+            "file": "fonts/Aurebesh Cantina Bold.otf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOMB_30",
+            "file": "fonts/Aurebesh Cantina Bold.otf"
         }
     ]
   },
-  "shortName": "Enigma+ Klingon",
-  "longName": "Enigma+ Klingon (Digital, Color) Watch Face",
-  "versionCode": 1,
+  "shortName": "Enigma Klingon",
+  "longName": "Enigma Klingon (Digital, Color) Watch Face",
+  "versionCode": 2,
   "companyName": "neon",
-  "versionLabel": "1.3",
-  "uuid": "ecc8f112-318f-4ef2-be11-53c63f8af13f",
+  "versionLabel": "2.0",
+  "uuid": "ecc8f112-318f-4ef2-aaaa-53c63f8af13f",
   "watchapp": {
     "watchface": true
   },

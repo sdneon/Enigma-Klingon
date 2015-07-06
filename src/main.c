@@ -42,6 +42,15 @@
  **/
 #define DECODE DECODE_TIME
 
+///Available languages
+#define LANG_ROTATE -1
+#define LANG_HUMAN 0
+#define LANG_KLINGON 1
+#define LANG_AUREBESH 2
+
+#define MAX_LANG 3
+
+
 /**
  * Specify the time interval (ms) after reveal, when all text will be re-encoded.
  **/
@@ -73,49 +82,71 @@ int order[4][10];
 bool m_bIsAm = false;
 static char s_dayOfWeek_buffer[4];
 
-static GFont s_custom_font30, s_custom_font42;
+static GFont m_sFontLetters[MAX_LANG] = {NULL}, m_sFontNumerals[MAX_LANG] = {NULL};
 static AppTimer *m_sptimerRevealAnimation, *m_sptimerRevert2Alien;
 static int m_nRevealStep = -1;
 int digitTime1, digitTime2, digitTime3, digitTime4,
     digitDate1, digitDate2, digitDate3, digitDate4;
 static int m_nDecodeMode = DECODE;
+static int m_nLang = LANG_KLINGON;
 static bool m_bUpdatingDisplay = false, m_bReady = false;
 
 //forward declaration
 void animation_stopped(struct Animation *animation);
 void display_time(struct tm* tick_time);
 
+
 //
 //Configuration stuff via AppMessage API
 //
 #define KEY_DECODE 0
+#define KEY_LANG 1
+
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Get the first pair
     Tuple *t = dict_read_first(iterator);
+    int nNeedUpdates = 0;
+    int nNewValue, i;
 
     // Process all pairs present
     while(t != NULL) {
         // Process this pair's key
-        //APP_LOG(APP_LOG_LEVEL_DEBUG, "Key:%d received with value:%d", (int)t->key, (int)t->value->int32);
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Key:%d received with value:%d", (int)t->key, (int)t->value->int32);
         switch (t->key) {
             case KEY_DECODE:
-                m_nDecodeMode = t->value->int32;
-                if (m_bReady && !m_bUpdatingDisplay)
+                nNewValue = t->value->int32;
+                if (m_nDecodeMode != nNewValue)
                 {
-//                    APP_LOG(APP_LOG_LEVEL_DEBUG, "Ready to update display");
-                    time_t now = time(NULL);
-                    struct tm *tick_time = localtime(&now);
-                    display_time(tick_time);
+                    nNeedUpdates = 1;
+                    m_nDecodeMode = nNewValue;
                 }
-//                else
-//                {
-//                    APP_LOG(APP_LOG_LEVEL_DEBUG, "XXX NOT Ready to update display");
-//                }
+                break;
+            case KEY_LANG:
+                nNewValue = t->value->int32;
+                if (m_nLang != nNewValue)
+                {
+                    nNeedUpdates = 2;
+                    m_nLang = nNewValue;
+                }
                 break;
         }
 
         // Get next pair, if any
         t = dict_read_next(iterator);
+    }
+    if ((nNeedUpdates > 0) && m_bReady && !m_bUpdatingDisplay)
+    {
+        if (nNeedUpdates > 1)
+        {
+            for (i = 0; i < 4; ++i)
+            {
+                text_layer_set_font(text_layer[i], m_sFontNumerals[m_nLang]);
+            }
+            text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], m_sFontLetters[m_nLang]);
+        }
+        time_t now = time(NULL);
+        struct tm *tick_time = localtime(&now);
+        display_time(tick_time);
     }
 }
 
@@ -644,13 +675,33 @@ void readConfig()
     if (persist_exists(KEY_DECODE))
     {
         m_nDecodeMode = persist_read_int(KEY_DECODE);
+        if (m_nDecodeMode == DECODE_WEEKDAY)
+        {
+            m_nDecodeMode = DECODE_TIME;
+        }
+    }
+    if (persist_exists(KEY_LANG))
+    {
+        m_nLang = persist_read_int(KEY_LANG);
     }
 }
 
 void saveConfig()
 {
     persist_write_int(KEY_DECODE, m_nDecodeMode);
+    persist_write_int(KEY_LANG, m_nLang);
 }
+
+void loadFonts()
+{
+    m_sFontLetters[0] = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
+    m_sFontNumerals[0] = fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS);
+    m_sFontLetters[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMA_30));
+    m_sFontNumerals[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMA_42));
+    m_sFontLetters[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMB_30));
+    m_sFontNumerals[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMB_42));
+}
+
 
 //
 //Window setup sutff
@@ -689,8 +740,7 @@ void handle_init(void)
 
     srand(time(NULL));
 
-    s_custom_font30 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_30));
-    s_custom_font42 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOM_42));
+    loadFonts();
 
     for (int i = 0; i < 4; ++i)
     {
@@ -706,10 +756,7 @@ void handle_init(void)
         //text_layer_set_background_color(text_layer[i],
         //  (i != 2)? GColorClear:
         //  m_bIsAm? GColorRed: GColorBlue);
-        text_layer_set_font(text_layer[i],
-            //fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-            //fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS)); //Can't use, as numbers only
-            s_custom_font42);
+        text_layer_set_font(text_layer[i], m_sFontNumerals[m_nLang]);
         text_layer_set_text(text_layer[i], &digits[i][0]);
         text_layer_set_text_alignment(text_layer[i], GTextAlignmentCenter);
         layer_add_child(root_layer, text_layer_get_layer(text_layer[i]));
@@ -718,7 +765,7 @@ void handle_init(void)
         lyrTxtDecoded[i] = text_layer_create(GRect(i*frame.size.w/4, 14, frame.size.w/4, 2*ROW_HEIGHT));
         text_layer_set_text_color(lyrTxtDecoded[i], GColorWhite);
         text_layer_set_background_color(lyrTxtDecoded[i], GColorClear);
-        text_layer_set_font(lyrTxtDecoded[i], fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+        text_layer_set_font(lyrTxtDecoded[i], m_sFontNumerals[LANG_HUMAN]);
         text_layer_set_text(lyrTxtDecoded[i], ""); //&digits[i][0]);
         text_layer_set_text_alignment(lyrTxtDecoded[i], GTextAlignmentCenter);
         layer_add_child(root_layer, text_layer_get_layer(lyrTxtDecoded[i]));
@@ -732,7 +779,7 @@ void handle_init(void)
     //layer_set_bounds((Layer*)text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GRect(6, -8, frame.size.w / 2 - 2, 10));
     text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GColorWhite);
     text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GColorClear);
-    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], s_custom_font30);
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], m_sFontLetters[m_nLang]);
     text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], s_dayOfWeek_buffer);
     text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GTextAlignmentLeft);
     //text_layer_set_overflow_mode(text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED], GTextOverflowModeWordWrap);
@@ -741,8 +788,7 @@ void handle_init(void)
     text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED] = text_layer_create(GRect(0, -8, frame.size.w / 2 + 6, 32));
     text_layer_set_text_color(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GColorWhite);
     text_layer_set_background_color(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GColorClear);
-    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED],
-        fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+    text_layer_set_font(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], m_sFontLetters[LANG_HUMAN]);
     text_layer_set_text(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], "");
     text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GTextAlignmentLeft);
     layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED]));
@@ -794,8 +840,11 @@ void handle_deinit(void)
     }
     layer_destroy(time_box_layer);
     layer_destroy(battery_level_layer);
-    fonts_unload_custom_font(s_custom_font30);
-    fonts_unload_custom_font(s_custom_font42);
+    for (i = 1; i < MAX_LANG; ++i)
+    {
+        if (m_sFontLetters[i]) fonts_unload_custom_font(m_sFontLetters[i]);
+        if (m_sFontNumerals[i]) fonts_unload_custom_font(m_sFontNumerals[i]);
+    }
     if (m_sptimerRevealAnimation) app_timer_cancel(m_sptimerRevealAnimation);
     if (m_sptimerRevert2Alien) app_timer_cancel(m_sptimerRevert2Alien);
     window_destroy(my_window);
