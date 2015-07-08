@@ -80,7 +80,7 @@ Pebble.addEventListener('webviewclosed',
 Pebble.addEventListener('showConfiguration',
     function(e) {
         try {
-            var url = 'http://yunharla.altervista.org/pebble/config-rosetta.html?lang=';
+            var url = 'http://yunharla.altervista.org/pebble/config-rosetta2.html?lang=';
                 //url = 'https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/config/config.html'; //show as text! as GitHub returns mime type as plain text.
                 //url = 'https://cdn.rawgit.com/sdneon/Enigma-Klingon/master/config/config.html';
             url += watchConfig.KEY_LANG + '&decode=' + watchConfig.KEY_DECODE; //send/show current config in config page

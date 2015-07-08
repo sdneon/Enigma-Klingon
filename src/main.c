@@ -25,6 +25,9 @@
  **/
 #include <pebble.h>
 
+//DEBUG flags
+//#define DISABLE_CONFIG
+
 //bitmasks for m_nDecodeMode flag:
 #define DECODE_WEEKDAY  1
 #define DECODE_DATE     2
@@ -43,12 +46,16 @@
 #define DECODE DECODE_TIME
 
 ///Available languages
-#define LANG_ROTATE -1
-#define LANG_HUMAN 0
-#define LANG_KLINGON 1
-#define LANG_AUREBESH 2
+#define LANG_ROTATE       -1
+#define LANG_HUMAN         0
+#define LANG_KLINGON       1
+#define LANG_AUREBESH      2
+#define LANG_AUREBESH_HAND 3
+#define LANG_GRAALEN       4
+#define LANG_KENTAURUS     5
+#define LANG_MANDALOR      6
 
-#define MAX_LANG 3
+#define MAX_LANG 7
 
 
 /**
@@ -700,6 +707,16 @@ void loadFonts()
     m_sFontNumerals[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMA_42));
     m_sFontLetters[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMB_30));
     m_sFontNumerals[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMB_42));
+    m_sFontLetters[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMC_30));
+    m_sFontNumerals[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMC_42));
+    m_sFontLetters[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMD_30));
+    m_sFontNumerals[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMD_42));
+    m_sFontLetters[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOME_30));
+    m_sFontNumerals[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOME_42));
+    m_sFontLetters[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMF_30));
+    m_sFontNumerals[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMF_42));
+//    m_sFontLetters[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_30));
+//    m_sFontNumerals[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_42));
 }
 
 
@@ -708,6 +725,7 @@ void loadFonts()
 //
 void handle_init(void)
 {
+#ifndef DISABLE_CONFIG
     readConfig();
     // Register callbacks
     app_message_register_inbox_received(inbox_received_callback);
@@ -716,6 +734,7 @@ void handle_init(void)
     app_message_register_outbox_sent(outbox_sent_callback);
     // Open AppMessage
     app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+#endif
 
     my_window = window_create();
     window_stack_push(my_window, true);
@@ -822,7 +841,10 @@ void handle_deinit(void)
     battery_state_service_unsubscribe();
     tick_timer_service_unsubscribe();
 
+#ifndef DISABLE_CONFIG
+    app_message_deregister_callbacks();
     saveConfig();
+#endif
 
     int i;
     for (i = 0; i < 6; ++i)

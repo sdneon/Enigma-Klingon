@@ -4,6 +4,7 @@ Enigma watch face variant with choice of alien text for Pebble Time. (Colour, Di
 * Klingon (from Star Trek universe) (default) ![screenshot Klingon](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-5.png "Watch face in Klingon")
 * Human ![screenshot human](https://raw.githubusercontent.com/sdneon/Enigma-plus/master/store/pebble-screenshot-1-AM.png "Watch face in Human")
 * Aurebesh (from Star Wars universe) ![screenshot aurebesh](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-6-aurebesh.png "Watch face in Aurebesh, Star Wars font")
+* and more...
 
 You may now configure what information to display in decoded form (roman numerals for date & time, English text for weekday name); all other information remains in Klingon. Choices are:
 1. None (all info stays in Klingon)
@@ -55,6 +56,12 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
+* 2.1
+  * More alien fonts added:
+    * [Aurebesh, Handwritten (Star Wars)](http://www.fontspace.com/boba-fonts/aurek-besh-hand) by Boba Fonts.
+    * [Graalen, Andorian (Star Trek)](http://memory-beta.wikia.com/wiki/Andorian_languages) by Pixel Saga. Added in a 'W'.
+    * [Kentaurus, Greek (Star Trek)](http://www.dafont.com/kentaurus.font) by Pixel Saga.
+    * [Mandalorian (Star Wars)](http://www.dafont.com/mandalorian.font) by Erikstormtrooper.
 * v2.0
   * Aurebesh font integrated.
   * Add choice of languages to configuration.
@@ -77,8 +84,17 @@ Watch face: Aurebesh, Star Wars font
   
 ## TODO
 * Investigate Pebble JS failure causing configuration page to fail to load.
+* Investigate/fix fonts that Pebble cannot load correctly.
 
 ## Credits
-Thanks for creating these beautiful fonts:
-* [Klingon font](http://www.dafont.com/klingon-font.font) from Star Trek universe, by kaiserzharkhan.
-* [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe, by Pixel Saga.
+Thanks for creating these beautiful fonts.
+* kaiserzharkhan:
+  * [Klingon font](http://www.dafont.com/klingon-font.font) from Star Trek universe.
+* Pixel Saga:
+  * [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe.
+  * [Graalen, Andorian](http://memory-beta.wikia.com/wiki/Andorian_languages)  from Star Trek universe.
+  * [Kentaurus, Greek](http://www.dafont.com/kentaurus.font) from Star Trek universe.
+* Boba Fonts
+  * [Aurebesh, Handwritten (Star Wars)](http://www.fontspace.com/boba-fonts/aurek-besh-hand)  from Star Wars universe.
+* Erikstormtrooper
+  * [Mandalorian](http://www.dafont.com/mandalorian.font) from Star Wars universe.

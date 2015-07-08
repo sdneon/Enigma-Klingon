@@ -43,13 +43,61 @@
             "name": "FONT_CUSTOMB_30",
             "file": "fonts/Aurebesh Cantina Bold.otf"
         }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOMC_42",
+            "file": "fonts/Aurek-Besh Hand.ttf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOMC_30",
+            "file": "fonts/Aurek-Besh Hand.ttf"
+        }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOMD_42",
+            "file": "fonts/Graalen.ttf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOMD_30",
+            "file": "fonts/Graalen.ttf"
+        }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOME_42",
+            "file": "fonts/Kentaurus.otf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOME_30",
+            "file": "fonts/Kentaurus.otf"
+        }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOMF_42",
+            "file": "fonts/mandalor.ttf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOMF_30",
+            "file": "fonts/mandalor.ttf"
+        }
     ]
   },
-  "shortName": "Enigma Klingon",
-  "longName": "Enigma Klingon (Digital, Color) Watch Face",
+  "shortName": "Enigma Rosetta",
+  "longName": "Enigma Rosetta (Digital, Color) Watch Face",
   "versionCode": 2,
   "companyName": "neon",
-  "versionLabel": "2.0",
+  "versionLabel": "2.1",
   "uuid": "ecc8f112-318f-4ef2-be11-53c63f8af13f",
   "watchapp": {
     "watchface": true
