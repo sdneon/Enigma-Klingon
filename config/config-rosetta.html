@@ -2,13 +2,16 @@
   <head>
     <title>Enigma+ Rosetta Configuration</title>
   </head>
+  <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script>
-var DECODE_OPTIONS = {
-	'0': 0,
-	'7': 1,
-	'4': 2,
-	'6': 3
-};
+var MAX_LANG = 7,
+	LANG_HUMAN = 0,
+	DECODE_OPTIONS = {
+		'0': 0,
+		'7': 1,
+		'4': 2,
+		'6': 3
+	};
 function getQueryParam(variable, defaultValue)
 {
 	// Something like this to get query variables.
@@ -26,16 +29,41 @@ function getQueryParam(variable, defaultValue)
 	return defaultValue || false;
 }
 
+function onSelectChanged()
+{
+	var lang = parseInt($("#lang_select").val(), 10);
+	if (lang === LANG_HUMAN)
+	{
+		$("#decode_select").prop('disabled', true);
+		$("#decode_select").val(7);
+	}
+	else
+	{
+		$("#decode_select").prop('disabled', false);
+	}
+}
+
 function onLoad()
 {
 	//parseInt returns NaN if not numeric
-	var lang = parseInt(getQueryParam('lang'), 10),
+	var ver = parseInt(getQueryParam('ver'), 10),
+		lang = parseInt(getQueryParam('lang'), 10),
 		decode = parseInt(getQueryParam('decode'), 10),
         langSelect = document.getElementById("lang_select"),
-        decodeSelect = document.getElementById("decode_select");
-    if ((lang >= 0) && (lang <= 2))
+        decodeSelect = document.getElementById("decode_select"),
+        i;
+    if (!ver || (ver <= 20))
+    {
+    	for (i = 3; i <= 6; ++i)
+    	{
+			$("#lang_select option[value='" + i + "']").remove();
+		}
+    	MAX_LANG = 3;
+    }
+    if ((lang >= 0) && (lang < MAX_LANG))
     {
     	langSelect.selectedIndex = lang;
+    	onSelectChanged();
     }
     if (DECODE_OPTIONS[decode] !== undefined)
     {
@@ -49,11 +77,15 @@ function onLoad()
     <h3><i>Choose Watch Face Settings</i></h3>
 
     <p>Language:
-    <select id="lang_select">
+    <select id="lang_select"  onchange="onSelectChanged()">
 <!--      <option value="-1">(Random every hour)</option> -->
       <option value="0">Human</option>
       <option value="1" selected>Klingon (Star Trek)</option>
       <option value="2">Aurebesh (Star Wars)</option>
+      <option value="3">Aurebesh, Handwritten (Star Wars)</option>
+      <option value="4">Graalen, Andorian (Star Trek)</option>
+      <option value="5">Kentaurus, Greek (Star Trek)</option>
+      <option value="6">Mandalorian (Star Wars)</option>
     </select>
     </p>
 

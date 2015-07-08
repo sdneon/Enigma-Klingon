@@ -1,7 +1,10 @@
 //JSLint static code analysis options
 /*jslint browser:true, unparam:true, sloppy:true, plusplus:true, indent:4, white:true */
 /*global Pebble, console*/
-var DEF_DECODE = 4,
+
+var VERSION = 21,   //i.e. v2.1; for sending to config page
+    //Defaults:
+    DEF_DECODE = 4,
     DEF_LANG = 1,
     watchConfig = {
         KEY_DECODE: DEF_DECODE,
@@ -80,7 +83,7 @@ Pebble.addEventListener('webviewclosed',
 Pebble.addEventListener('showConfiguration',
     function(e) {
         try {
-            var url = 'http://yunharla.altervista.org/pebble/config-rosetta2.html?lang=';
+            var url = 'http://yunharla.altervista.org/pebble/config-rosetta.html?ver=' + VERSION + '&lang=';
                 //url = 'https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/config/config.html'; //show as text! as GitHub returns mime type as plain text.
                 //url = 'https://cdn.rawgit.com/sdneon/Enigma-Klingon/master/config/config.html';
             url += watchConfig.KEY_LANG + '&decode=' + watchConfig.KEY_DECODE; //send/show current config in config page
