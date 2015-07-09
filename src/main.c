@@ -54,8 +54,9 @@
 #define LANG_GRAALEN       4
 #define LANG_KENTAURUS     5
 #define LANG_MANDALOR      6
+#define LANG_BETAZED       7
 
-#define MAX_LANG 7
+#define MAX_LANG 8
 
 
 /**
@@ -715,8 +716,10 @@ void loadFonts()
     m_sFontNumerals[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOME_42));
     m_sFontLetters[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMF_30));
     m_sFontNumerals[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMF_42));
-//    m_sFontLetters[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_30));
-//    m_sFontNumerals[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_42));
+    m_sFontLetters[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_30));
+    m_sFontNumerals[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMG_42));
+//    m_sFontLetters[8] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMH_30));
+//    m_sFontNumerals[8] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CUSTOMH_42));
 }
 
 

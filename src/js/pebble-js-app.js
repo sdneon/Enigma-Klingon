@@ -2,7 +2,7 @@
 /*jslint browser:true, unparam:true, sloppy:true, plusplus:true, indent:4, white:true */
 /*global Pebble, console*/
 
-var VERSION = 21,   //i.e. v2.1; for sending to config page
+var VERSION = 22,   //i.e. v2.2; for sending to config page
     //Defaults:
     DEF_DECODE = 4,
     DEF_LANG = 1,

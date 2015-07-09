@@ -6,7 +6,7 @@ Enigma watch face variant with choice of alien text for Pebble Time. (Colour, Di
 * Aurebesh (from Star Wars universe) ![screenshot aurebesh](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-6-aurebesh.png "Watch face in Aurebesh, Star Wars font")
 * and more...
 
-You may now configure what information to display in decoded form (roman numerals for date & time, English text for weekday name); all other information remains in Klingon. Choices are:
+You may now configure what information to display in decoded form (Human, English); all other information remains in Klingon. Choices are:
 1. None (all info stays in Klingon)
 2. All
 3. Time only (default)
@@ -56,6 +56,8 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
+* 2.2 work-in-progress
+  * Added Betazed by Pixel Saga. Added size 30 & 42 bitmaps.
 * 2.1
   * More alien fonts added:
     * [Aurebesh, Handwritten (Star Wars)](http://www.fontspace.com/boba-fonts/aurek-besh-hand) by Boba Fonts.
@@ -92,6 +94,7 @@ Thanks for creating these beautiful fonts.
   * [Klingon font](http://www.dafont.com/klingon-font.font) from Star Trek universe.
 * Pixel Saga:
   * [Aurebesh font](http://www.dafont.com/aurebesh.font) from Star Wars universe.
+  * [Betazed](http://www.dafont.com/betazed.font) from Star Trek universe.
   * [Graalen, Andorian](http://memory-beta.wikia.com/wiki/Andorian_languages)  from Star Trek universe.
   * [Kentaurus, Greek](http://www.dafont.com/kentaurus.font) from Star Trek universe.
 * Boba Fonts

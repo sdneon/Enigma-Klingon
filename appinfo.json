@@ -91,13 +91,25 @@
             "name": "FONT_CUSTOMF_30",
             "file": "fonts/mandalor.ttf"
         }
+        ,{
+            "characterRegex": "[0-9 ]",
+            "type": "font",
+            "name": "FONT_CUSTOMG_42",
+            "file": "fonts/Betazed-Bold.ttf"
+        }
+        ,{
+            "characterRegex": "[MONTUEWDHFRISA]",
+            "type": "font",
+            "name": "FONT_CUSTOMG_30",
+            "file": "fonts/Betazed-Bold.ttf"
+        }
     ]
   },
   "shortName": "Enigma Rosetta",
   "longName": "Enigma Rosetta (Digital, Color) Watch Face",
   "versionCode": 2,
   "companyName": "neon",
-  "versionLabel": "2.1",
+  "versionLabel": "2.2",
   "uuid": "ecc8f112-318f-4ef2-be11-53c63f8af13f",
   "watchapp": {
     "watchface": true
