@@ -4,14 +4,13 @@
   </head>
   <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script>
-var MAX_LANG = 8,
+var MAX_LANG = {
+		0: 3, //v2.0 and below
+		21: 7,
+		22: 8
+	},
 	LANG_HUMAN = 0,
-	DECODE_OPTIONS = {
-		'0': 0,
-		'7': 1,
-		'4': 2,
-		'6': 3
-	};
+	DECODE_ALL = 7;
 function getQueryParam(variable, defaultValue)
 {
 	// Something like this to get query variables.
@@ -35,7 +34,7 @@ function onSelectChanged()
 	if (lang === LANG_HUMAN)
 	{
 		$("#decode_select").prop('disabled', true);
-		$("#decode_select").val(7);
+		$("#decode_select").val(DECODE_ALL);
 	}
 	else
 	{
@@ -49,33 +48,30 @@ function onLoad()
 	var ver = parseInt(getQueryParam('ver'), 10),
 		lang = parseInt(getQueryParam('lang'), 10),
 		decode = parseInt(getQueryParam('decode'), 10),
-        langSelect = document.getElementById("lang_select"),
-        decodeSelect = document.getElementById("decode_select"),
-        i;
-    if (!ver || (ver <= 20))
+		maxAllVersLangCnt = $("#lang_select option").length,
+        i, maxVerLangCnt, selector;
+    if (isNaN(ver))
     {
-    	for (i = 3; i <= 6; ++i)
-    	{
-			$("#lang_select option[value='" + i + "']").remove();
-		}
-    	MAX_LANG -= 4;
+    	ver = 0;
     }
-    if (!ver || (ver <= 21))
+    maxVerLangCnt = MAX_LANG[ver];
+    if (maxVerLangCnt === undefined)
     {
-    	for (i = 7; i <= 7; ++i)
-    	{
-			$("#lang_select option[value='" + i + "']").remove();
-		}
-    	--MAX_LANG;
+    	maxVerLangCnt = 3;
     }
-    if ((lang >= 0) && (lang < MAX_LANG))
+	for (i = maxVerLangCnt; i < maxAllVersLangCnt; ++i)
+	{
+		$("#lang_select option[value='" + i + "']").remove();
+	}
+    selector = $("#lang_select option[value='" + lang + "']");
+    if (selector.length > 0)
     {
-    	langSelect.selectedIndex = lang;
-    	onSelectChanged();
+    	selector.prop('selected', true);
     }
-    if (DECODE_OPTIONS[decode] !== undefined)
+    selector = $("#decode_select option[value='" + decode + "']");
+    if (selector.length > 0)
     {
-    	decodeSelect.selectedIndex = DECODE_OPTIONS[decode];
+    	selector.prop('selected', true);
     }
 }
   </script>
@@ -91,10 +87,10 @@ function onLoad()
       <option value="1" selected>Klingon (Star Trek)</option>
       <option value="2">Aurebesh (Star Wars)</option>
       <option value="3">Aurebesh, Handwritten (Star Wars)</option>
+      <option value="7">Betazed (Star Trek)</option>
       <option value="4">Graalen, Andorian (Star Trek)</option>
       <option value="5">Kentaurus, Greek (Star Trek)</option>
       <option value="6">Mandalorian (Star Wars)</option>
-      <option value="7">Betazed (Star Trek)</option>
     </select>
     </p>
 
