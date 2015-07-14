@@ -6,8 +6,8 @@ Enigma watch face variant with choice of alien text for Pebble Time. (Colour, Di
 * Aurebesh (from Star Wars universe) ![screenshot aurebesh](https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/store/pebble-screenshot-6-aurebesh.png "Watch face in Aurebesh, Star Wars font")
 * and more...
 
-You may now configure what information to display in decoded form (Human, English); all other information remains in Klingon. Choices are:
-1. None (all info stays in Klingon)
+You may now configure what information to display in decoded form (Human, English); all other information remains in alien. Choices are:
+1. None (all info stays in alien)
 2. All
 3. Time only (default)
 4. Date & Time only
@@ -56,8 +56,11 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
-* 2.2 work-in-progress
+* 2.2
   * Added Betazed by Pixel Saga. Added size 30 & 42 bitmaps.
+  * Added optional vibes for:
+    * Bluetooth connection lost: fading vibe.
+    * Hourly chirp. Default: Off, 10am to 8pm.
 * 2.1
   * More alien fonts added:
     * [Aurebesh, Handwritten (Star Wars)](http://www.fontspace.com/boba-fonts/aurek-besh-hand) by Boba Fonts.

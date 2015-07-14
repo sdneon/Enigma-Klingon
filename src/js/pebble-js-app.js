@@ -6,16 +6,24 @@ var VERSION = 22,   //i.e. v2.2; for sending to config page
     //Defaults:
     DEF_DECODE = 4,
     DEF_LANG = 1,
+    DEF_VIBES = 0X10A14,
     watchConfig = {
         KEY_DECODE: DEF_DECODE,
-        KEY_LANG: DEF_LANG
-    };
+        KEY_LANG: DEF_LANG,
+        KEY_VIBES: DEF_VIBES
+    },
+    //masks for vibes:
+    MASKV_BTDC = 0x20000,
+    MASKV_HOURLY = 0x10000,
+    MASKV_FROM = 0xFF00,
+    MASKV_TO = 0x00FF;
 
 //Load saved config from localStorage
 function loadConfig()
 {
     var decode = parseInt(localStorage.getItem(0), 10),
-        lang = parseInt(localStorage.getItem(1), 10);
+        lang = parseInt(localStorage.getItem(1), 10),
+        vibes = parseInt(localStorage.getItem(2), 10);
     if (isNaN(decode))
     {
         decode = DEF_DECODE;
@@ -24,8 +32,13 @@ function loadConfig()
     {
         lang = DEF_LANG;
     }
+    if (isNaN(vibes))
+    {
+        vibes = DEF_VIBES;
+    }
     watchConfig.KEY_DECODE = decode;
     watchConfig.KEY_LANG = lang;
+    watchConfig.KEY_VIBES = vibes;
 }
 
 //Save config to localStorage
@@ -33,6 +46,7 @@ function saveConfig()
 {
     localStorage.setItem(0, watchConfig.KEY_DECODE);
     localStorage.setItem(1, watchConfig.KEY_LANG);
+    localStorage.setItem(2, watchConfig.KEY_VIBES);
 }
 
 function sendOptions(options)
@@ -69,6 +83,12 @@ Pebble.addEventListener('webviewclosed',
             watchConfig.KEY_LANG = value;
             noOptions = false;
         }
+        if (options.vibes !== undefined)
+        {
+            value = parseInt(options.vibes, 10);
+            watchConfig.KEY_VIBES = value;
+            noOptions = false;
+        }
         if (noOptions)
         {
             return;
@@ -84,9 +104,10 @@ Pebble.addEventListener('showConfiguration',
     function(e) {
         try {
             var url = 'http://yunharla.altervista.org/pebble/config-rosetta.html?ver=' + VERSION + '&lang=';
-                //url = 'https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/config/config.html'; //show as text! as GitHub returns mime type as plain text.
-                //url = 'https://cdn.rawgit.com/sdneon/Enigma-Klingon/master/config/config.html';
-            url += watchConfig.KEY_LANG + '&decode=' + watchConfig.KEY_DECODE; //send/show current config in config page
+            //var url = 'https://raw.githubusercontent.com/sdneon/Enigma-Klingon/master/config/config.html'; //shows as text! as GitHub returns mime type as plain text.
+            //var url = 'https://cdn.rawgit.com/sdneon/Enigma-Klingon/master/config/config.html';
+            //Send/show current config in config page:
+            url += watchConfig.KEY_LANG + '&decode=' + watchConfig.KEY_DECODE + '&vibes=0x' + watchConfig.KEY_VIBES.toString(16);
 
             // Show config page
             Pebble.openURL(url);

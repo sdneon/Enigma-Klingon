@@ -45,7 +45,7 @@
  **/
 #define DECODE DECODE_TIME
 
-///Available languages
+//Available languages
 #define LANG_ROTATE       -1
 #define LANG_HUMAN         0
 #define LANG_KLINGON       1
@@ -57,6 +57,14 @@
 #define LANG_BETAZED       7
 
 #define MAX_LANG 8
+
+//masks for vibes:
+#define MASKV_BTDC   0x20000
+#define MASKV_HOURLY 0x10000
+#define MASKV_FROM   0xFF00
+#define MASKV_TO     0x00FF
+//def: disabled, 10am to 8pm
+#define DEF_VIBES    0x0A14
 
 
 /**
@@ -97,7 +105,16 @@ int digitTime1, digitTime2, digitTime3, digitTime4,
     digitDate1, digitDate2, digitDate3, digitDate4;
 static int m_nDecodeMode = DECODE;
 static int m_nLang = LANG_KLINGON;
+static int m_nVibes = DEF_VIBES;
 static bool m_bUpdatingDisplay = false, m_bReady = false;
+
+// Vibe pattern for loss of BT connection: ON for 400ms, OFF for 100ms, ON for 300ms, OFF 100ms, 100ms:
+static const uint32_t const VIBE_SEG_BT_LOSS[] = { 400, 200, 200, 400, 100 };
+static const VibePattern VIBE_PAT_BT_LOSS = {
+  .durations = VIBE_SEG_BT_LOSS,
+  .num_segments = ARRAY_LENGTH(VIBE_SEG_BT_LOSS),
+};
+
 
 //forward declaration
 void animation_stopped(struct Animation *animation);
@@ -109,6 +126,7 @@ void display_time(struct tm* tick_time);
 //
 #define KEY_DECODE 0
 #define KEY_LANG 1
+#define KEY_VIBES 2
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Get the first pair
@@ -119,7 +137,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Process all pairs present
     while(t != NULL) {
         // Process this pair's key
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Key:%d received with value:%d", (int)t->key, (int)t->value->int32);
+        //APP_LOG(APP_LOG_LEVEL_DEBUG, "Key:%d received with value:%d", (int)t->key, (int)t->value->int32);
         switch (t->key) {
             case KEY_DECODE:
                 nNewValue = t->value->int32;
@@ -135,6 +153,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                 {
                     nNeedUpdates = 2;
                     m_nLang = nNewValue;
+                }
+                break;
+            case KEY_VIBES:
+                nNewValue = t->value->int32;
+                if (m_nVibes != nNewValue)
+                {
+                    m_nVibes = nNewValue;
                 }
                 break;
         }
@@ -176,6 +201,11 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 //
 bool m_bBtConnected = false;
 static void bt_handler(bool connected) {
+    if (!connected && m_bBtConnected //vibrate once upon BT connection lost
+        && (m_nVibes & MASKV_BTDC)) //only if option enabled
+    {
+        vibes_enqueue_custom_pattern(VIBE_PAT_BT_LOSS);
+    }
     m_bBtConnected = connected;
     TextLayer *layer = text_layer[TXT_LAYER_DAY_OF_WEEK_ENCODED];
     if (layer)
@@ -576,6 +606,26 @@ void display_time(struct tm* tick_time) {
     int h = tick_time->tm_hour;
     int m = tick_time->tm_min;
 
+    if ((m_nVibes & MASKV_HOURLY) //option enabled to vibrate hourly
+        && (m == 0)) //hourly mark reached
+    {
+        int from = (m_nVibes & MASKV_FROM) >> 8,
+            to = m_nVibes & MASKV_TO;
+        bool bShake = false;
+        if (from <= to)
+        {
+            bShake = (h >= from) && (h <= to);
+        }
+        else
+        {
+            bShake = (h >= from) || (h <= to);
+        }
+        if (bShake)
+        {
+            vibes_double_pulse();
+        }
+    }
+
     m_bIsAm = (h < 12);
 
     // If watch is in 12hour mode
@@ -692,12 +742,17 @@ void readConfig()
     {
         m_nLang = persist_read_int(KEY_LANG);
     }
+    if (persist_exists(KEY_VIBES))
+    {
+        m_nVibes = persist_read_int(KEY_VIBES);
+    }
 }
 
 void saveConfig()
 {
     persist_write_int(KEY_DECODE, m_nDecodeMode);
     persist_write_int(KEY_LANG, m_nLang);
+    persist_write_int(KEY_VIBES, m_nVibes);
 }
 
 void loadFonts()

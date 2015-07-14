@@ -5,74 +5,107 @@
   <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script>
 var MAX_LANG = {
-		0: 3, //v2.0 and below
-		21: 7,
-		22: 8
-	},
-	LANG_HUMAN = 0,
-	DECODE_ALL = 7;
+        0: 3, //v2.0 and below
+        21: 7,
+        22: 8
+    },
+    LANG_HUMAN = 0,
+    DECODE_ALL = 7,
+    //masks for vibes:
+    MASKV_BTDC = 0x20000,
+    MASKV_HOURLY = 0x10000,
+    MASKV_FROM = 0xFF00,
+    MASKV_TO = 0x00FF;
+
 function getQueryParam(variable, defaultValue)
 {
-	// Something like this to get query variables.
-	// Find all URL parameters
-	var query = location.search.substring(1);
-	var vars = query.split('&');
-	for (var i = 0; i < vars.length; i++) {
-		var pair = vars[i].split('=');
+    // Something like this to get query variables.
+    // Find all URL parameters
+    var query = location.search.substring(1);
+    var vars = query.split('&');
+    for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
 
-		// If the query variable parameter is found, decode it to use and return it for use
-		if (pair[0] === variable) {
-			return decodeURIComponent(pair[1]);
-		}
-	}
-	return defaultValue || false;
+        // If the query variable parameter is found, decode it to use and return it for use
+        if (pair[0] === variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    return defaultValue || false;
 }
 
-function onSelectChanged()
+function onLangChanged()
 {
-	var lang = parseInt($("#lang_select").val(), 10);
-	if (lang === LANG_HUMAN)
-	{
-		$("#decode_select").prop('disabled', true);
-		$("#decode_select").val(DECODE_ALL);
-	}
-	else
-	{
-		$("#decode_select").prop('disabled', false);
-	}
+    var lang = parseInt($("#lang_select").val(), 10);
+    if (lang === LANG_HUMAN)
+    {
+        $("#decode_select").prop('disabled', true);
+        $("#decode_select").val(DECODE_ALL);
+    }
+    else
+    {
+        $("#decode_select").prop('disabled', false);
+    }
+}
+
+function onVibesHourlyChanged()
+{
+    var enabled = $("#cbVibesHourly").is(":checked");
+    $("#vibe_start_select").prop('disabled', !enabled);
+    $("#vibe_end_select").prop('disabled', !enabled);
 }
 
 function onLoad()
 {
-	//parseInt returns NaN if not numeric
-	var ver = parseInt(getQueryParam('ver'), 10),
-		lang = parseInt(getQueryParam('lang'), 10),
-		decode = parseInt(getQueryParam('decode'), 10),
-		maxAllVersLangCnt = $("#lang_select option").length,
-        i, maxVerLangCnt, selector;
+    //parseInt returns NaN if not numeric
+    var ver = parseInt(getQueryParam('ver'), 10),
+        lang = parseInt(getQueryParam('lang'), 10),
+        decode = parseInt(getQueryParam('decode'), 10),
+        vibes = parseInt(getQueryParam('vibes'), 16),
+        maxAllVersLangCnt = $("#lang_select option").length,
+        i, maxVerLangCnt, selector, enabled;
     if (isNaN(ver))
     {
-    	ver = 0;
+        ver = 0;
     }
     maxVerLangCnt = MAX_LANG[ver];
     if (maxVerLangCnt === undefined)
     {
-    	maxVerLangCnt = 3;
+        maxVerLangCnt = 3;
     }
-	for (i = maxVerLangCnt; i < maxAllVersLangCnt; ++i)
-	{
-		$("#lang_select option[value='" + i + "']").remove();
-	}
+    for (i = maxVerLangCnt; i < maxAllVersLangCnt; ++i)
+    {
+        $("#lang_select option[value='" + i + "']").remove();
+    }
     selector = $("#lang_select option[value='" + lang + "']");
     if (selector.length > 0)
     {
-    	selector.prop('selected', true);
+        selector.prop('selected', true);
     }
     selector = $("#decode_select option[value='" + decode + "']");
     if (selector.length > 0)
     {
-    	selector.prop('selected', true);
+        selector.prop('selected', true);
     }
+    if (isNaN(ver) || (ver < 22))
+    {
+        $("#divVibes").css('visibility', 'hidden');
+        $("#divVibes").css('height', '0px');
+        $("#cbVibesBtdc").prop('disabled', true);
+        $("#cbVibesHourly").prop('disabled', true);
+        $("#vibe_start_select").prop('disabled', true);
+        $("#vibe_end_select").prop('disabled', true);
+    }
+    else if (!isNaN(vibes) && (typeof vibes === 'number'))
+    {
+        $("#cbVibesBtdc").prop('checked', (vibes & MASKV_BTDC) > 0);
+        $("#cbVibesHourly").prop('checked', (vibes & MASKV_HOURLY) > 0);
+        selector = $("#vibe_start_select option[value='" + ((vibes & MASKV_FROM) >> 8) + "']");
+        selector.prop('selected', true);
+        selector = $("#vibe_end_select option[value='" + (vibes & MASKV_TO) + "']");
+        selector.prop('selected', true);
+    }
+    onVibesHourlyChanged();
 }
   </script>
   <body bgcolor="#47484B" onload="onLoad()">
@@ -81,7 +114,7 @@ function onLoad()
     <h3><i>Choose Watch Face Settings</i></h3>
 
     <p>Language:
-    <select id="lang_select"  onchange="onSelectChanged()">
+    <select id="lang_select"  onchange="onLangChanged()">
 <!--      <option value="-1">(Random every hour)</option> -->
       <option value="0">Human</option>
       <option value="1" selected>Klingon (Star Trek)</option>
@@ -103,6 +136,67 @@ function onLoad()
     </select>
     </p>
 
+<div id='divVibes'>
+    <h3>Vibrations</h3>
+    <input type="checkbox" id="cbVibesBtdc">Enable on Bluetooth disconnection.<br>
+    <p><input type="checkbox" id="cbVibesHourly" onchange="onVibesHourlyChanged()">Enable hourly vibrations:<br>
+        from (inclusive):
+        <select id="vibe_start_select">
+          <option value="0">12 AM</option>
+          <option value="1">1 AM</option>
+          <option value="2">2 AM</option>
+          <option value="3">3 AM</option>
+          <option value="4">4 AM</option>
+          <option value="5">5 AM</option>
+          <option value="6">6 AM</option>
+          <option value="7">7 AM</option>
+          <option value="8">8 AM</option>
+          <option value="9">9 AM</option>
+          <option value="10" selected>10 AM</option>
+          <option value="11">11 AM</option>
+          <option value="12">12 PM</option>
+          <option value="13">1 PM</option>
+          <option value="14">2 PM</option>
+          <option value="15">3 PM</option>
+          <option value="16">4 PM</option>
+          <option value="17">5 PM</option>
+          <option value="18">6 PM</option>
+          <option value="19">7 PM</option>
+          <option value="20">8 PM</option>
+          <option value="21">9 PM</option>
+          <option value="22">10 PM</option>
+          <option value="23">11 PM</option>
+        </select>
+        <br>to (inclusive):
+        <select id="vibe_end_select">
+          <option value="0">12 AM</option>
+          <option value="1">1 AM</option>
+          <option value="2">2 AM</option>
+          <option value="3">3 AM</option>
+          <option value="4">4 AM</option>
+          <option value="5">5 AM</option>
+          <option value="6">6 AM</option>
+          <option value="7">7 AM</option>
+          <option value="8">8 AM</option>
+          <option value="9">9 AM</option>
+          <option value="10">10 AM</option>
+          <option value="11">11 AM</option>
+          <option value="12">12 PM</option>
+          <option value="13">1 PM</option>
+          <option value="14">2 PM</option>
+          <option value="15">3 PM</option>
+          <option value="16">4 PM</option>
+          <option value="17">5 PM</option>
+          <option value="18">6 PM</option>
+          <option value="19">7 PM</option>
+          <option value="20" selected>8 PM</option>
+          <option value="21">9 PM</option>
+          <option value="22">10 PM</option>
+          <option value="23">11 PM</option>
+        </select>
+    </p>
+</div>
+
     <p>
     <button id="save_button">Save</button>
     </p>
@@ -111,18 +205,29 @@ function onLoad()
       //Setup to allow easy adding more options later
       function saveOptions() {
         var langSelect = document.getElementById("lang_select"),
-            decodeSelect = document.getElementById("decode_select");
-        var options = {
-            lang: langSelect.options[langSelect.selectedIndex].value,
-            decode: decodeSelect.options[decodeSelect.selectedIndex].value
+            decodeSelect = document.getElementById("decode_select"),
+            options = {
+                lang: parseInt(langSelect.options[langSelect.selectedIndex].value, 10),
+                decode: parseInt(decodeSelect.options[decodeSelect.selectedIndex].value, 10),
+            }, vibes = 0;
+        if ($("#cbVibesBtdc").prop('checked'))
+        {
+            vibes += MASKV_BTDC;
         }
+        if ($("#cbVibesHourly").prop('checked'))
+        {
+            vibes += MASKV_HOURLY;
+            vibes += parseInt($("#vibe_start_select").val(), 10) << 8;
+            vibes += parseInt($("#vibe_end_select").val(), 10);
+        }
+        options.vibes = vibes;
+        //console.log(options);
 
         return options;
       };
       var submitButton = document.getElementById("save_button");
       submitButton.addEventListener("click",
         function() {
-          console.log("Submit");
           var options = saveOptions();
           var location = "pebblejs://close#" + encodeURIComponent(JSON.stringify(options));
 

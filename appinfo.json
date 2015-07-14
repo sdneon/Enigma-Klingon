@@ -4,7 +4,8 @@
   ],
   "appKeys": {
     "KEY_DECODE": 0,
-    "KEY_LANG": 1
+    "KEY_LANG": 1,
+    "KEY_VIBES": 2
   },
   "resources": {
     "media": [
