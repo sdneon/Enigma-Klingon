@@ -9,6 +9,8 @@ var MAX_LANG = {
         21: 7,
         22: 8
     },
+	VER_CUR = 22,
+	VER_VIBES_MIN = 22,
     LANG_HUMAN = 0,
     DECODE_ALL = 7,
     //masks for vibes:
@@ -63,7 +65,7 @@ function onLoad()
         decode = parseInt(getQueryParam('decode'), 10),
         vibes = parseInt(getQueryParam('vibes'), 16),
         maxAllVersLangCnt = $("#lang_select option").length,
-        i, maxVerLangCnt, selector, enabled;
+        i, maxVerLangCnt, selector;
     if (isNaN(ver))
     {
         ver = 0;
@@ -87,7 +89,11 @@ function onLoad()
     {
         selector.prop('selected', true);
     }
-    if (isNaN(ver) || (ver < 22))
+	if (ver < VER_CUR)
+	{
+		$("#spanNewVer").css('visibility', '');
+	}
+    if (ver < VER_VIBES_MIN)
     {
         $("#divVibes").css('visibility', 'hidden');
         $("#divVibes").css('height', '0px');
@@ -110,7 +116,7 @@ function onLoad()
   </script>
   <body bgcolor="#47484B" onload="onLoad()">
     <font face="helvetica" color="white">
-    <h2>Enigma+ Rosetta</h2>
+    <h2>Enigma+ Rosetta <span id='spanNewVer' style='color:#FF00FF; visibility:hidden'><b><i>(New version available!)</i></b></span></h2>
     <h3><i>Choose Watch Face Settings</i></h3>
 
     <p>Language:
@@ -137,9 +143,9 @@ function onLoad()
     </p>
 
 <div id='divVibes'>
-    <h3>Vibrations</h3>
-    <input type="checkbox" id="cbVibesBtdc">Enable on Bluetooth disconnection.<br>
-    <p><input type="checkbox" id="cbVibesHourly" onchange="onVibesHourlyChanged()">Enable hourly vibrations:<br>
+    <h4>Enable Vibrations:</h4>
+    <input type="checkbox" id="cbVibesBtdc">On Bluetooth disconnection.<br>
+    <p><input type="checkbox" id="cbVibesHourly" onchange="onVibesHourlyChanged()">Hourly:<br>
         from (inclusive):
         <select id="vibe_start_select">
           <option value="0">12 AM</option>

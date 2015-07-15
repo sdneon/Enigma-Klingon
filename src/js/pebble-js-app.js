@@ -63,7 +63,7 @@ function sendOptions(options)
 
 Pebble.addEventListener('webviewclosed',
     function(e) {
-        console.log('Configuration window returned: ' + e.response);
+        //console.log('Configuration window returned: ' + e.response);
         if (!e.response)
         {
             return;
