@@ -6,7 +6,7 @@ var VERSION = 22,   //i.e. v2.2; for sending to config page
     //Defaults:
     DEF_DECODE = 4,
     DEF_LANG = 1,
-    DEF_VIBES = 0X10A14,
+    DEF_VIBES = 0X00A14,
     watchConfig = {
         KEY_DECODE: DEF_DECODE,
         KEY_LANG: DEF_LANG,
