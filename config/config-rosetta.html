@@ -11,8 +11,9 @@ var DEBUG = false,
         21: 7,
         22: 8
     },
-	VER_CUR = 22,
+	VER_CUR = 23,
 	VER_VIBES_MIN = 22,
+	VER_WEATHER_MIN = 23,
     LANG_HUMAN = 0,
     DECODE_ALL = 7,
     //masks for vibes:
@@ -59,6 +60,40 @@ function onVibesHourlyChanged()
     $("#vibe_end_select").prop('disabled', !enabled);
 }
 
+function onWeaUseGpsChanged()
+{
+    var enabled = $("#cbWeaUseGps").is(":checked");
+    $("#cbWeaLocation").prop('disabled', enabled);
+}
+
+function onWeatherChanged()
+{
+    var enabled = $("#cbWeather").is(":checked");
+    $("#wea_interval").prop('disabled', !enabled);
+    $("#cbWeaUseGps").prop('disabled', !enabled);
+	$("#test_button").prop('disabled', !enabled);
+	$('#txtWeaLocationStatus').html('');
+	$('#cbWeaLocation').removeClass('textbox-green');
+	$('#cbWeaLocation').removeClass('textbox-red');
+    $('input[name=weaUnits]').attr('disabled', !enabled);
+    if (enabled)
+    {
+    	$('label[class="css-label css-label-disabled"]').removeClass('css-label-disabled');
+	}
+	else
+	{
+    	$('label[class="css-label"]').addClass('css-label-disabled');
+	}
+    if (!enabled)
+    {
+    	$("#cbWeaLocation").prop('disabled', true);
+    }
+    else
+    {
+    	onWeaUseGpsChanged();
+	}
+}
+
 function onLoad()
 {
     //parseInt returns NaN if not numeric
@@ -67,6 +102,11 @@ function onLoad()
         decode = parseInt(getQueryParam('decode'), 10),
         vibes = parseInt(getQueryParam('vibes'), 16),
         maxAllVersLangCnt = $("#lang_select option").length,
+        weather = getQueryParam('weather', false) === 'true',
+        gps = getQueryParam('gps', false) === 'true',
+        location = getQueryParam('location', ''),
+        units = getQueryParam('units', 'c'),
+        interval = parseInt(getQueryParam('interval', 1800000), 10),
         i, maxVerLangCnt, selector;
     if (isNaN(ver))
     {
@@ -114,6 +154,89 @@ function onLoad()
         selector.prop('selected', true);
     }
     onVibesHourlyChanged();
+    if (ver < VER_WEATHER_MIN)
+    {
+        $("#divWeather").css('visibility', 'hidden');
+        $("#divWeather").css('height', '0px');
+        $("#cbWeather").prop('disabled', true);
+        $("#headingWeather").css({color: 'lightgray', 'text-decoration':'line-through'});
+        $("#wea_interval").prop('disabled', true);
+        $("#cbWeaUseGps").prop('disabled', true);
+        $("#cbWeaLocation").prop('disabled', true);
+        $("#test_button").prop('disabled', true);
+        $('label[class="css-label"]').addClass('css-label-disabled');
+    }
+    else
+    {
+    	//enable/disable weather
+    	$("#cbWeather").prop('checked', !!weather);
+		$("#cbWeaUseGps").prop('checked', !!gps);
+        selector = $("#wea_interval option[value='" + interval + "']");
+        selector.prop('selected', true);
+        if (location && (location.length > 0))
+        {
+        	$("#cbWeaLocation").val(location);
+		}
+        selector = $('input:radio[name="weaUnits"][value="' + units + '"]').prop('checked', true);
+    }
+    onWeatherChanged();
+}
+
+function locationFailed()
+{
+	$('#cbWeaLocation').removeClass('textbox-green');
+	$('#cbWeaLocation').addClass('textbox-red');
+	$('#txtWeaLocationStatus').html('Failed: Location unknown!');
+	$('#txtWeaLocationStatus').addClass('location-status-fail');
+}
+
+function updateLocation(location_name)
+{
+	$('#cbWeaLocation').val(location_name);
+	$('#cbWeaLocation').removeClass('textbox-red');
+	$('#cbWeaLocation').addClass('textbox-green');
+	$('#txtWeaLocationStatus').html('OK, Location found.');
+	$('#txtWeaLocationStatus').removeClass('location-status-fail');
+}
+
+function checkLocation()
+{
+	var location_name = $('#cbWeaLocation').val(),
+		response, woeid = -1,
+		query = encodeURI("select woeid, name from geo.places(1) where text=\"" + location_name + "\""),
+		url = "http://query.yahooapis.com/v1/public/yql?q=" + query + "&format=json",
+		req = new XMLHttpRequest();
+
+	if (!location_name || (location_name.length <= 0))
+	{
+		locationFailed();
+		return;
+	}
+    req.timeout = 10000;
+    req.ontimeout = function() {
+        locationFailed();;
+    };
+	req.open('GET', url, true);
+	req.onload = function(e) {
+		if (req.readyState === 4)
+		{
+			if (req.status === 200)
+			{
+				//console.log(req.responseText);
+				response = JSON.parse(req.responseText);
+				if (response && response.query && response.query.results
+					 && response.query.results.place
+					 && (response.query.results.place.name !== undefined)
+					 && (response.query.results.place.woeid !== undefined))
+				{
+					updateLocation(response.query.results.place.name);
+					return;
+				}
+			}
+			locationFailed();
+		}
+	};
+	req.send(null);
 }
   </script>
   <body bgcolor="#47484B" onload="onLoad()">
@@ -224,13 +347,47 @@ function onLoad()
           <option value="22">10 PM</option>
           <option value="23">11 PM</option>
         </select>
-    </p>
+    </p></div><br>
 </div><hr>
-
+<div id='divWeather'>
+    <h4 id='headingWeather'>Weather</h4>
+    <div class="onoffswitch">
+    	<input type="checkbox" id="cbWeather" onchange="onWeatherChanged()" class="onoffswitch-checkbox">
+			<label class="onoffswitch-label" for="cbWeather">
+				<span class="onoffswitch-inner"></span>
+				<span class="onoffswitch-switch"></span>
+			</label>
+	</div><div class="onoffswitch-description">Enable weather.</div><br>
+	<div class="css3-metro-dropdown-description">Update Interval:
+		<span class="css3-metro-dropdown css3-metro-dropdown-color-ff2e12">
+		<select id="wea_interval">
+		  <option value="900000">15 mins&nbsp;&nbsp;&nbsp;</option>
+		  <option value="1800000">30 mins</option>
+		  <option value="3600000">1 hr</option>
+		  <option value="7200000">2 hrs</option>
+		</select>
+		</span>
+	</div>
+    <p>
+    <div class="onoffswitch onoffswitch-gps">
+    	<input type="checkbox" id="cbWeaUseGps" onchange="onWeaUseGpsChanged()" class="onoffswitch-checkbox">
+    		<label class="onoffswitch-label" for="cbWeaUseGps">
+    			<span class="onoffswitch-inner onoffswitch-gps-inner"></span>
+				<span class="onoffswitch-switch onoffswitch-gps-switch"></span>
+			</label>
+	</div><div class="textbox-blue-description">&nbsp;<input type="textbox" id="cbWeaLocation" class="textbox-blue" placeholder="Antarctica"></div>
+    <br>&nbsp;&nbsp;&nbsp;<button id="test_button" class="saveButton">Check Location</button>&nbsp;&nbsp;<span id="txtWeaLocationStatus"></span>
+	<p>Temperature in:
+	<input type="radio" name="weaUnits" value="c" id="weaUnitC" checked class="css-checkbox">
+	<label for="weaUnitC" class="css-label">&#x00b0;C</label>
+	<input type="radio" name="weaUnits" value="f" id="weaUnitF" class="css-checkbox">
+	<label for="weaUnitF" class="css-label">&#x00b0;F</label><br>
+</div>
+<div id='divSave'>
     <p>
     <button id="save_button" class="saveButton">Save</button>
     </p>
-
+</div>
     <script>
       //Setup to allow easy adding more options later
       function saveOptions() {
@@ -239,6 +396,11 @@ function onLoad()
             options = {
                 lang: parseInt(langSelect.options[langSelect.selectedIndex].value, 10),
                 decode: parseInt(decodeSelect.options[decodeSelect.selectedIndex].value, 10),
+				weather: $("#cbWeather").prop('checked')? 1: 0,
+				gps: $("#cbWeaUseGps").prop('checked')? 1: 0,
+				location: $("#cbWeaLocation").val(),
+				interval: parseInt($("#wea_interval").val(), 10),
+				units: $('input[name=weaUnits]:checked').val()
             }, vibes = 0;
         if ($("#cbVibesBtdc").prop('checked'))
         {
@@ -255,8 +417,8 @@ function onLoad()
 
         return options;
       };
-      var submitButton = document.getElementById("save_button");
-      submitButton.addEventListener("click",
+      var button = document.getElementById("save_button");
+      button.addEventListener("click",
         function() {
           var options = JSON.stringify(saveOptions());
           if (DEBUG)
@@ -267,7 +429,9 @@ function onLoad()
           var location = "pebblejs://close#" + encodeURIComponent(options);
           document.location = location;
         },
-      false);
+        false);
+      button = document.getElementById("test_button");
+      button.addEventListener("click", checkLocation, false);
     </script>
   </body>
 </html>

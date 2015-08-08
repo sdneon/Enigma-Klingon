@@ -17,18 +17,23 @@ Shake to decode all information temporarily for 5 secs.
 Modified from my [Enigma Plus](https://github.com/sdneon/Enigma-plus) watch face.
 
 ## Display
-1. 3 of 5 rows of info:
-  1. Day of week (abbreviated 3 letters, uppercase).
-    * This mini-bar (top-left) doubles as 'bluetooth status' indicator.
-        * Coloured: connected
-        * Dark: disconnected.
-  2. Date (DDMM).
-  3. Coloured time bar
-    * Red: AM
-    * Blue: PM.
+1. 4 of 5 rows of info:
+    1. Day of week (abbreviated 3 letters, uppercase).
+        * This mini-bar (top-left) doubles as 'bluetooth status' indicator.
+            * Coloured: connected
+            * Dark: disconnected.
+    2. Date (DDMM).
+    3. Coloured time bar
+        * Red: AM
+        * Blue: PM.
+    4. Optional weather info using Yahoo Weather data: weather condition icon & average temperature at bottom right corner.
+        * Location (using GPS or predefined location), update interval and temperature units are configurable.
+        * Yahoo has 49 different weather conditions. These are listed in this [page](http://yunharla.altervista.org/pebble/weather-codes.html). Several similar ones with differing adjectives like- isolated, scattered.
+            * Isolated is ~10-20% coverage (area affected), and depicted by weather icon in the far distance (so it's partly cropped/clipped).
+            * Scattered is ~30-50% coverage, and depicted by weather icon in middle distance (less cropping than for _isolated_).
 2. Battery-level indicator: 3rd column.
-  * Top down orange bar: charging,
-  * bottom-up bar: charge remaining.
+    * Top down orange bar: charging,
+    * bottom-up bar: charge remaining.
 
 'Year' display has been removed, so as to show more Klingon text.
 
@@ -56,6 +61,8 @@ Watch face: Aurebesh, Star Wars font
  * If you are using other locales (than EN), you may need to redefine the FONT_CUSTOM_30's _characterRegex_ definition to include characters needed for the weekday name in your locale.
 
 ## Changelog
+* 2.3
+  * Added weather.
 * 2.2
   * Added Betazed by Pixel Saga. Added size 30 & 42 bitmaps.
   * Added optional vibes for:

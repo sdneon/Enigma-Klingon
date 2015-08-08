@@ -67,6 +67,9 @@
 #define DEF_VIBES    0x0A14
 
 
+#define WEATHER_NA_ICON_ID 48
+static const int WEATHER_ICONS = RESOURCE_ID_WEATHER00;
+
 /**
  * Specify the time interval (ms) after reveal, when all text will be re-encoded.
  **/
@@ -115,24 +118,41 @@ static const VibePattern VIBE_PAT_BT_LOSS = {
   .num_segments = ARRAY_LENGTH(VIBE_SEG_BT_LOSS),
 };
 
+//weather stuff
+static Layer *m_sLayerWeather, *m_sLayerWeather2;
+static TextLayer *m_stxtWeather;
+static GBitmap *m_spbmPicWeather = NULL;
+static BitmapLayer *m_spbmLayerW;
+static bool m_bWeatherEnabled = false;
+static int m_nIconId = WEATHER_NA_ICON_ID;
+static char m_szTemp[10]; //temperature string
 
 //forward declaration
 void animation_stopped(struct Animation *animation);
 void display_time(struct tm* tick_time);
-
+void setWeatherIcon();
 
 //
 //Configuration stuff via AppMessage API
 //
-#define KEY_DECODE 0
-#define KEY_LANG 1
-#define KEY_VIBES 2
+#define KEY_DECODE  0
+#define KEY_LANG    1
+#define KEY_VIBES   2
+#define KEY_WEATHER  3
+#define KEY_INTERVAL 4
+#define KEY_GPS      5
+#define KEY_LOCATION 6
+#define KEY_UNITS    7
+#define KEY_ICON     8
+#define KEY_TEMP     9
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     // Get the first pair
     Tuple *t = dict_read_first(iterator);
     int nNeedUpdates = 0;
     int nNewValue, i;
+    bool bNewValue;
+    bool bUpdateWeather = false;
 
     // Process all pairs present
     while(t != NULL) {
@@ -162,6 +182,34 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
                     m_nVibes = nNewValue;
                 }
                 break;
+            case KEY_WEATHER:
+                bNewValue = t->value->int32 != 0;
+                if (m_bWeatherEnabled != bNewValue)
+                {
+                    m_bWeatherEnabled = bNewValue;
+                    layer_set_hidden(m_sLayerWeather, !m_bWeatherEnabled);
+                }
+                break;
+            case KEY_ICON:
+                nNewValue = t->value->int32;
+                if (m_nIconId != nNewValue)
+                {
+                    gbitmap_destroy(m_spbmPicWeather);
+                    m_spbmPicWeather = NULL;
+
+                    m_nIconId = nNewValue;
+                    m_spbmPicWeather = gbitmap_create_with_resource(WEATHER_ICONS + nNewValue);
+                    if (m_spbmPicWeather != NULL)
+                    {
+                        setWeatherIcon();
+                    }
+                    bUpdateWeather = true;
+                }
+                break;
+            case KEY_TEMP:
+                strcpy(m_szTemp, t->value->cstring);
+                bUpdateWeather = true;
+                break;
         }
 
         // Get next pair, if any
@@ -181,6 +229,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         struct tm *tick_time = localtime(&now);
         display_time(tick_time);
     }
+    if (bUpdateWeather)
+    {
+        //update weather icon
+        text_layer_set_text(m_stxtWeather, m_szTemp);
+        layer_mark_dirty(m_sLayerWeather);
+    }
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
@@ -195,6 +249,11 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+
+void setWeatherIcon()
+{
+    bitmap_layer_set_bitmap(m_spbmLayerW, m_spbmPicWeather);
+}
 
 //
 //Bluetooth stuff
@@ -783,6 +842,7 @@ void loadFonts()
 //
 void handle_init(void)
 {
+    m_szTemp[0] = 0;
 #ifndef DISABLE_CONFIG
     readConfig();
     // Register callbacks
@@ -870,6 +930,25 @@ void handle_init(void)
     text_layer_set_text_alignment(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED], GTextAlignmentLeft);
     layer_add_child(root_layer, text_layer_get_layer(text_layer[TXT_LAYER_DAY_OF_WEEK_DECODED]));
 
+    //Weather pic layer
+    m_sLayerWeather = layer_create(GRect(104, 108, 40, 60));
+    layer_add_child(root_layer, m_sLayerWeather);
+    m_spbmLayerW = bitmap_layer_create(GRect(0, 0, 40, 40));
+    m_spbmPicWeather = gbitmap_create_with_resource(WEATHER_ICONS + m_nIconId);
+    bitmap_layer_set_background_color(m_spbmLayerW, GColorFolly);
+    bitmap_layer_set_compositing_mode(m_spbmLayerW, GCompOpSet);
+    setWeatherIcon();
+    layer_add_child(m_sLayerWeather, bitmap_layer_get_layer(m_spbmLayerW));
+    layer_set_hidden(m_sLayerWeather, true);
+    m_stxtWeather = text_layer_create(GRect(0, 40, 40, 32));
+    //strcpy(m_szTemp, "-888 C"); //DEBUG: test text width
+    text_layer_set_text(m_stxtWeather, m_szTemp);
+    text_layer_set_background_color(m_stxtWeather, GColorFolly);
+    text_layer_set_text_color(m_stxtWeather, GColorWhite);
+    text_layer_set_font(m_stxtWeather, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+    text_layer_set_text_alignment(m_stxtWeather, GTextAlignmentCenter);
+    layer_add_child(m_sLayerWeather, text_layer_get_layer(m_stxtWeather));
+
     time_t now = time(NULL);
     struct tm *tick_time = localtime(&now);
     display_time(tick_time);
@@ -927,6 +1006,12 @@ void handle_deinit(void)
     }
     if (m_sptimerRevealAnimation) app_timer_cancel(m_sptimerRevealAnimation);
     if (m_sptimerRevert2Alien) app_timer_cancel(m_sptimerRevert2Alien);
+    bitmap_layer_destroy(m_spbmLayerW);
+    layer_destroy(m_sLayerWeather);
+    if (m_spbmPicWeather)
+    {
+        gbitmap_destroy(m_spbmPicWeather);
+    }
     window_destroy(my_window);
 }
 
